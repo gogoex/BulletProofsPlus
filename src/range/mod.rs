@@ -194,12 +194,18 @@ impl RangeProof {
         gamma_vec: &[Scalar],
         commitment_vec: &[CompressedRistretto],
     ) -> RangeProof {
+        println!("prove_multiple called");
+
         let mn = n * m;
+
         // check parameter
         assert_eq!(pk.G_vec.len(), mn);
         assert_eq!(pk.H_vec.len(), mn);
+
         // random alpha
-        let alpha = Scalar::random(&mut thread_rng());
+        //let alpha = Scalar::random(&mut thread_rng());
+        let alpha = Scalar::from(33u8);
+
         // compute A
         use subtle::{Choice, ConditionallySelectable};
         let mut v_bits: Vec<Choice> = Vec::with_capacity(mn);
@@ -214,9 +220,12 @@ impl RangeProof {
             A += point;
             i += 1;
         }
+
         transcript.append_point(b"A", &(A.compress()));
-        let y = transcript.challenge_scalar(b"y");
-        let z = transcript.challenge_scalar(b"z");
+
+        let y = Scalar::from(12u8); // transcript.challenge_scalar(b"y");
+        let z = Scalar::from(23u8); // transcript.challenge_scalar(b"z");
+
         // compute d
         let power_of_two: Vec<Scalar> = util::exp_iter_type1(Scalar::from(2u64)).take(n).collect();
         let power_of_y: Vec<Scalar> = util::exp_iter_type2(y).take(mn).collect();
@@ -227,6 +236,9 @@ impl RangeProof {
             .iter()
             .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
             .collect();
+
+        println!("d={:?}", d);
+
         // compute A_hat
         let G_vec_sum_exp = -z;
         let H_exp: Vec<Scalar> = d
@@ -356,13 +368,13 @@ impl RangeProof {
         // 1. Recompute y and z
 
         transcript.validate_and_append_point(b"A", &self.A)?;
-        let y = transcript.challenge_scalar(b"y");
-        let z = transcript.challenge_scalar(b"z");
+        let y = Scalar::from(12u8); // transcript.challenge_scalar(b"y");
+        let z = Scalar::from(23u8); // transcript.challenge_scalar(b"z");
         let minus_z = -z;
         let z_sqr = z * z;
 
         // 2. Compute power of two, power of y, power of z
-        
+
         let power_of_two: Vec<Scalar> = util::exp_iter_type1(Scalar::from(2u64)).take(n).collect();
         let mut power_of_y: Vec<Scalar> = util::exp_iter_type2(y).take(mn + 1).collect();
         let power_of_y_mn_plus_1 = match power_of_y.pop() {
@@ -371,14 +383,14 @@ impl RangeProof {
         };
         let power_of_y_rev = power_of_y.iter().rev();
         let power_of_z: Vec<Scalar> = util::exp_iter_type2(z_sqr).take(m).collect();
-        
+
         // 3. Compute concat_z_and_2
 
         let concat_z_and_2: Vec<Scalar> = power_of_z
             .iter()
             .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
             .collect();
-        
+
         // 4. Compute scalars for verification
 
         let (challenges_sqr, challenges_inv_sqr, s_vec, e)
@@ -389,7 +401,7 @@ impl RangeProof {
         let e_sqr_inv = e_sqr.invert();
         let r_prime_e_inv_y = self.proof.r_prime * e_inv * y;
         let s_prime_e_inv = self.proof.s_prime * e_inv;
-        
+
         // 5. Compute exponents of G_vec, H_vec, g, and h
 
         let r_prime = self.proof.r_prime;
@@ -407,12 +419,12 @@ impl RangeProof {
         let sum_z = util::sum_of_powers_type2(&z_sqr, m);
         let g_exp = -r_prime * s_prime * y * e_sqr_inv + (sum_y * (z - z_sqr) - power_of_y_mn_plus_1 * z * sum_2 * sum_z);
         let h_exp = -d_prime * e_sqr_inv;
-        
+
         // 6. Compute exponents of V_vec
 
         let V_exp = power_of_z.iter()
             .map(|power_of_z_i| power_of_z_i * power_of_y_mn_plus_1);
-        
+
         // 7. Compute RHS / LHS
 
         let expected = RistrettoPoint::optional_multiscalar_mul(
@@ -438,7 +450,7 @@ impl RangeProof {
                 .chain(commitment_vec.iter().map(|&v| v.decompress())),
         )
         .ok_or_else(|| ProofError::VerificationError)?;
-        
+
         if expected.is_identity() {
             Ok(())
         } else {
