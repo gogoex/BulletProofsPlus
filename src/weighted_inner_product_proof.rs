@@ -4,7 +4,6 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::iter;
-use rand_core::OsRng;
 use std::mem;
 
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
@@ -48,7 +47,7 @@ impl WeightedInnerProductProof {
         commitment: RistrettoPoint,
     ) -> Self {
         // random number generator
-        let mut csprng = OsRng;
+        // let mut csprng = OsRng;
         // create slices G, H, a, b, c
         let mut G = &mut pk.G_vec.clone()[..];
         let mut H = &mut pk.H_vec.clone()[..];
@@ -86,8 +85,8 @@ impl WeightedInnerProductProof {
             let c_L = util::weighted_inner_product(&a1, &b2, &power_of_y1);
             let c_R = util::weighted_inner_product(&a2, &b1, &power_of_y2);
             // random d_L and d_R by prover
-            let d_L: Scalar = Scalar::random(&mut csprng);
-            let d_R: Scalar = Scalar::random(&mut csprng);
+            let d_L: Scalar = Scalar::from(4u8);
+            let d_R: Scalar = Scalar::from(5u8);
             // compute L and R
             let y_nhat = power_of_y1[n - 1];
             let y_nhat_inv = y_nhat.invert();
@@ -120,7 +119,7 @@ impl WeightedInnerProductProof {
             // get challenge e
             transcript.append_point(b"L", &(L.compress()));
             transcript.append_point(b"R", &(R.compress()));
-            let e = transcript.challenge_scalar(b"e");
+            let e = Scalar::from(7u8);
             let e_inv = e.invert();
             let e_sqr = e * e;
             let e_sqr_inv = e_inv * e_inv;
@@ -145,10 +144,10 @@ impl WeightedInnerProductProof {
             alpha += e_sqr * d_L + e_sqr_inv * d_R;
         }
         // random r, s, delta, eta
-        let r: Scalar = Scalar::random(&mut csprng);
-        let s: Scalar = Scalar::random(&mut csprng);
-        let delta: Scalar = Scalar::random(&mut csprng);
-        let eta: Scalar = Scalar::random(&mut csprng);
+        let r: Scalar = Scalar::from(33u8);
+        let s: Scalar = Scalar::from(44u8);
+        let delta: Scalar = Scalar::from(88u8);
+        let eta: Scalar = Scalar::from(123u8);
         // compute A and B
         let rcbsca = r * power_of_y[0] * b[0] + s * power_of_y[0] * a[0];
         let rcs = r * power_of_y[0] * s;
@@ -164,7 +163,7 @@ impl WeightedInnerProductProof {
         // get challenge e
         transcript.append_point(b"A", &A);
         transcript.append_point(b"B", &B);
-        let e = transcript.challenge_scalar(b"e");
+        let e = Scalar::from(99u8);
         // compute r_prime, s_prime, delta_prime
         let r_prime = r + a[0] * e;
         let s_prime = s + b[0] * e;
@@ -279,12 +278,12 @@ impl WeightedInnerProductProof {
         transcript.weighted_inner_product_domain_sep(power_of_y_vec);
 
         // 1. Recompute e_1, e_2, ..., e_k based on the proof transcript
-        
+
         let mut challenges = Vec::with_capacity(logn);
         for (L, R) in self.L_vec.iter().zip(self.R_vec.iter()) {
             transcript.validate_and_append_point(b"L", L)?;
             transcript.validate_and_append_point(b"R", R)?;
-            challenges.push(transcript.challenge_scalar(b"e"));
+            challenges.push(Scalar::from(7u8));
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
@@ -305,8 +304,8 @@ impl WeightedInnerProductProof {
 
         transcript.validate_and_append_point(b"A", &self.A)?;
         transcript.validate_and_append_point(b"B", &self.B)?;
-        let e = transcript.challenge_scalar(b"e");
-        
+        let e = Scalar::from(99u8);
+
         // 5. Compute s_vec and s_prime_vec
 
         let mut s_vec = Vec::with_capacity(n);
