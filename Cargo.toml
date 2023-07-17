@@ -17,6 +17,7 @@ serde_derive = { version = "1", default-features = false }
 thiserror = { version = "1", optional = true }
 merlin = { version = "2", default-features = false }
 clear_on_drop = { version = "0.2", default-features = false, features = ["nightly"] }
+hex = "0.4"
 
 [dev-dependencies]
 hex = "0.3"

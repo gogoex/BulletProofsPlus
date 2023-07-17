@@ -138,7 +138,7 @@ impl RangeProof {
         let mut g_exp: Scalar = power_of_y.iter().sum();
         g_exp *= z - z * z;
         g_exp -= (util::scalar_exp_vartime(&two, n as u64) - one) * V_exp * z;
-        
+
         let A_hat = match RistrettoPoint::optional_multiscalar_mul(
             iter::once(Scalar::one())
                 .chain(iter::once(G_vec_sum_exp))
@@ -185,6 +185,11 @@ impl RangeProof {
             proof: proof,
         }
     }
+
+    fn to_hex(s: &Scalar) -> String {
+        hex::encode(s.to_bytes())
+    }
+
     fn prove_multiple(
         transcript: &mut Transcript,
         pk: &PublicKey,
@@ -237,7 +242,13 @@ impl RangeProof {
             .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
             .collect();
 
-        println!("d={:?}", d);
+        {
+            let mut i=0;
+            for d_i in &d {
+                println!("{}: {}", i, RangeProof::to_hex(d_i));
+                i += 1;
+            }
+        }
 
         // compute A_hat
         let G_vec_sum_exp = -z;
