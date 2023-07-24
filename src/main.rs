@@ -1,9 +1,8 @@
-#[allow(unused_imports)]
 use rand_core::OsRng;
 use curve25519_dalek::scalar::Scalar;
 use merlin::Transcript;
 use bulletproofsplus::PublicKey;
-
+#[allow(unused_imports)]
 use bulletproofsplus::range::{RangeProof, RangeProver, RangeVerifier};
 use std::time::Instant;
 
