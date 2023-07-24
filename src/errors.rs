@@ -135,6 +135,18 @@ pub enum R1CSError {
     #[cfg_attr(feature = "std", error("R1CSProof did not verify correctly."))]
     VerificationError,
 
+    // /// Occurs when trying to use a missing variable assignment.
+    // /// Used by gadgets that build the constraint system to signal that
+    // /// a variable assignment is not provided when the prover needs it.
+    // #[cfg_attr(feature = "std", error("Variable does not have a value assignment."))]
+    // MissingAssignment,
+
+    // /// Occurs when a gadget receives an inconsistent input.
+    // #[cfg_attr(feature = "std", error("Gadget error: {description:?}"))]
+    // GadgetError {
+    //     /// The description of the reasons for the error.
+    //     description: String,
+    // },
 }
 
 impl From<ProofError> for R1CSError {

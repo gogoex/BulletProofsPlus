@@ -7,6 +7,7 @@ mod weighted_inner_product_proof;
 pub mod range;
 mod transcript;
 //pub mod r1cs;
+mod secp256k1;
 
 pub use crate::publickey::PublicKey;
 pub use crate::range::RangeProof;
