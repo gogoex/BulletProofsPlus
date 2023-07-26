@@ -9,6 +9,7 @@ use crate::secp256k1::building_block::{
         secp256k1::Secp256k1,
     },
 };
+use std::rc::Rc;
 
 /**
  * Publickey
