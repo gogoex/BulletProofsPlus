@@ -21,20 +21,26 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new(length: usize) -> Self {
-        let curve = Secp256k1::new();
-
+    pub fn new(curve: &Rc<Secp256k1>, length: usize) -> Self {
+        // g = 1g
         let g = curve.g();
+
+        // h = 2g
         let h = curve.g() * curve.f.elem(&2u8);
 
+        // G = 3g, 6g, 9g, ...
         let mut G_vec: Vec<AffinePoint> = vec![];
-        for _i in 0..length {
-            let p = curve.g() * curve.f.rand_elem(true);
+        for i in 0..length {
+            let m = curve.f.elem(&(3 * (i + 1)));
+            let p = curve.g() * m;
             G_vec.push(p);
         }
+
+        // H = 5g, 10g, 15g, ...
         let mut H_vec: Vec<AffinePoint> = vec![];
-        for _i in 0..length {
-            let p = curve.g() * curve.f.rand_elem(true);
+        for i in 0..length {
+            let m = curve.f.elem(&(5 * (i + 1)));
+            let p = curve.g() * m;
             H_vec.push(p);
         }
 
