@@ -268,7 +268,6 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-
 #[cfg(test)]
 mod tests {
   use super::*;

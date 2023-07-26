@@ -2,15 +2,16 @@
 
 extern crate alloc;
 
-use core::iter;
-use crate::secp256k1::building_block::secp256k1::{
-    affine_point::AffinePoint,
-    secp256k1::Secp256k1,
+use crate::secp256k1::building_block::{
+    field::prime_field_elem::PrimeFieldElem,
+    secp256k1::{
+        affine_point::AffinePoint,
+        secp256k1::Secp256k1,
+    },
 };
-use curve25519_dalek::traits::MultiscalarMul;
 
 /**
- * Publickey 
+ * Publickey
  */
 pub struct PublicKey {
     pub g: AffinePoint,
@@ -20,15 +21,22 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    //
     pub fn new(length: usize) -> Self {
         let curve = Secp256k1::new();
 
         let g = curve.g();
-        let h = curve.g() * 2;
+        let h = curve.g() * curve.f.elem(&2u8);
 
-        let G_vec: Vec<AffinePoint> = curve.f.rand_elems(length, true);
-        let H_vec: Vec<AffinePoint> = curve.f.rand_elems(length, true);
+        let mut G_vec: Vec<AffinePoint> = vec![];
+        for _i in 0..length {
+            let p = curve.g() * curve.f.rand_elem(true);
+            G_vec.push(p);
+        }
+        let mut H_vec: Vec<AffinePoint> = vec![];
+        for _i in 0..length {
+            let p = curve.g() * curve.f.rand_elem(true);
+            H_vec.push(p);
+        }
 
         PublicKey {
             g: g,
@@ -38,26 +46,7 @@ impl PublicKey {
         }
     }
 
-    pub fn commitment(&self, v: &Scalar, gamma: &Scalar) -> AffinePoint {
-        self.g * v + self.h * gamma
-    }
-
-    pub fn vector_commitment(
-        &self,
-        a_vec: &Vec<Scalar>,
-        b_vec: &Vec<Scalar>,
-        out: &Scalar,
-        gamma: &Scalar,
-    ) -> RistrettoPoint {
-        let scalars = a_vec
-            .iter()
-            .chain(b_vec.iter())
-            .chain(iter::once(out))
-            .chain(iter::once(gamma));
-        let points = self.G_vec.iter()
-            .chain(self.H_vec.iter())
-            .chain(iter::once(&self.g))
-            .chain(iter::once(&self.h));
-            RistrettoPoint::multiscalar_mul(scalars, points)
+    pub fn commitment(&self, v: &PrimeFieldElem, gamma: &PrimeFieldElem) -> AffinePoint {
+        &self.g * v + &self.h * gamma
     }
 }

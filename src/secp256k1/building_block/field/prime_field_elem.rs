@@ -379,6 +379,72 @@ impl PrimeFieldElem {
       PrimeFieldElem { f, e }
     }
   }
+
+/*
+    pub fn batch_invert(inputs: &mut [Scalar]) -> Scalar {
+        // This code is essentially identical to the FieldElement
+        // implementation, and is documented there.  Unfortunately,
+        // it's not easy to write it generically, since here we want
+        // to use `UnpackedScalar`s internally, and `Scalar`s
+        // externally, but there's no corresponding distinction for
+        // field elements.
+
+        let n = inputs.len();
+        let one: UnpackedScalar = Scalar::ONE.unpack().as_montgomery();
+
+        let mut scratch = vec![one; n];
+
+        // Keep an accumulator of all of the previous products
+        let mut acc = Scalar::ONE.unpack().as_montgomery();
+
+        // Pass through the input vector, recording the previous
+        // products in the scratch space
+        for (input, scratch) in inputs.iter_mut().zip(scratch.iter_mut()) {
+            *scratch = acc;
+
+            // Avoid unnecessary Montgomery multiplication in second pass by
+            // keeping inputs in Montgomery form
+            let tmp = input.unpack().as_montgomery();
+            *input = tmp.pack();
+            acc = UnpackedScalar::montgomery_mul(&acc, &tmp);
+        }
+
+        // acc is nonzero iff all inputs are nonzero
+        debug_assert!(acc.pack() != Scalar::ZERO);
+
+        // Compute the inverse of all products
+        acc = acc.montgomery_invert().from_montgomery();
+
+        // We need to return the product of all inverses later
+        let ret = acc.pack();
+
+        // Pass through the vector backwards to compute the inverses
+        // in place
+        for (input, scratch) in inputs.iter_mut().rev().zip(scratch.iter().rev()) {
+            let tmp = UnpackedScalar::montgomery_mul(&acc, &input.unpack());
+            *input = UnpackedScalar::montgomery_mul(&acc, scratch).pack();
+            acc = tmp;
+        }
+
+        #[cfg(feature = "zeroize")]
+        zeroize::Zeroize::zeroize(&mut scratch);
+
+        ret
+    }
+*/
+
+  // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
+  pub fn batch_invert(xs: &Vec<PrimeFieldElem>) -> (PrimeFieldElem, Vec<PrimeFieldElem>) {
+    let mut prod = xs[0].f.elem(&1u8);
+    let mut inv_xs = vec![];
+
+    for x in xs {
+      inv_xs.push(x.inv());
+      prod = prod * x.inv();
+    }
+    inv_xs.reverse();
+    (prod, inv_xs)
+  }
 }
 
 #[cfg(test)]
