@@ -114,3 +114,21 @@ pub fn weighted_inner_product(a: &[Scalar], b: &[Scalar], c: &[Scalar]) -> Scala
     }
     out
 }
+
+#[allow(dead_code)]
+pub fn to_hex(s: &Scalar) -> String {
+    let mut s2 = s.to_bytes();
+    s2.reverse();
+
+    let mut buf = vec![];
+    let mut non_zero_found = false;
+    for b in s2 {
+        if b != 0 {
+            non_zero_found = true;
+        }
+        if non_zero_found {
+            buf.push(b);
+        }
+    }
+    hex::encode(buf)
+}

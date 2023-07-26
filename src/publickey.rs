@@ -3,33 +3,35 @@
 extern crate alloc;
 
 use core::iter;
-use crate::secp256k1::building_block::secp256k1::{
-    affine_point::AffinePoint,
-    secp256k1::Secp256k1,
-};
+use alloc::vec::Vec;
+use rand_core::OsRng;
+
+use curve25519_dalek::ristretto::RistrettoPoint;
+use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::MultiscalarMul;
 
 /**
  * Publickey 
  */
 pub struct PublicKey {
-    pub g: AffinePoint,
-    pub h: AffinePoint,
-    pub G_vec: Vec<AffinePoint>,
-    pub H_vec: Vec<AffinePoint>,
+    pub g: RistrettoPoint,
+    pub h: RistrettoPoint,
+    pub G_vec: Vec<RistrettoPoint>,
+    pub H_vec: Vec<RistrettoPoint>,
 }
 
 impl PublicKey {
     //
     pub fn new(length: usize) -> Self {
-        let curve = Secp256k1::new();
-
-        let g = curve.g();
-        let h = curve.g() * 2;
-
-        let G_vec: Vec<AffinePoint> = curve.f.rand_elems(length, true);
-        let H_vec: Vec<AffinePoint> = curve.f.rand_elems(length, true);
-
+        let mut csprng = OsRng;
+        let g = RistrettoPoint::random(&mut csprng);
+        let h = RistrettoPoint::random(&mut csprng);
+        let G_vec: Vec<RistrettoPoint> = (0..length)
+            .map(|_| RistrettoPoint::random(&mut csprng))
+            .collect();
+        let H_vec: Vec<RistrettoPoint> = (0..length)
+            .map(|_| RistrettoPoint::random(&mut csprng))
+            .collect();
         PublicKey {
             g: g,
             h: h,
@@ -37,11 +39,11 @@ impl PublicKey {
             H_vec: H_vec,
         }
     }
-
-    pub fn commitment(&self, v: &Scalar, gamma: &Scalar) -> AffinePoint {
-        self.g * v + self.h * gamma
+    //
+    pub fn commitment(&self, v: &Scalar, gamma: &Scalar) -> RistrettoPoint {
+        RistrettoPoint::multiscalar_mul(&[*v, *gamma], &[self.g, self.h])
     }
-
+    //
     pub fn vector_commitment(
         &self,
         a_vec: &Vec<Scalar>,

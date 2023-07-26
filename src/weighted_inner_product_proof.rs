@@ -4,7 +4,6 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::iter;
-use rand_core::OsRng;
 use std::mem;
 
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
@@ -12,7 +11,8 @@ use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::VartimeMultiscalarMul;
 use merlin::Transcript;
 
-use crate::util;
+use crate::util::{self, to_hex};
+// use crate::util::to_hex;
 use crate::errors::ProofError;
 use crate::publickey::PublicKey;
 use crate::transcript::TranscriptProtocol;
@@ -48,50 +48,62 @@ impl WeightedInnerProductProof {
         commitment: RistrettoPoint,
     ) -> Self {
         // random number generator
-        let mut csprng = OsRng;
+        // let mut csprng = OsRng;
         // create slices G, H, a, b, c
         let mut G = &mut pk.G_vec.clone()[..];
         let mut H = &mut pk.H_vec.clone()[..];
         let mut a = &mut a_vec.clone()[..];
         let mut b = &mut b_vec.clone()[..];
         let mut power_of_y = &mut power_of_y_vec.clone()[..];
+
         // create copyed mutable scalars
         let mut alpha = gamma;
+
         // create copyed mutable commitment
         let mut P = commitment;
+
         // all of the input vectors must have the same length
         let mut n = G.len();
         assert_eq!(H.len(), n);
         assert_eq!(a.len(), n);
         assert_eq!(b.len(), n);
         assert_eq!(power_of_y.len(), n);
+
         // the length should be power of two
         assert!(n.is_power_of_two());
+
         // set transcript weight vector
         transcript.weighted_inner_product_domain_sep(power_of_y_vec);
+
         // allocate memory for L_vec and R_vec
         let logn = n.next_power_of_two().trailing_zeros() as usize;
         let mut L_vec: Vec<CompressedRistretto> = Vec::with_capacity(logn);
         let mut R_vec: Vec<CompressedRistretto> = Vec::with_capacity(logn);
+
         // n > 1 case
         while n != 1 {
             n = n / 2;
+
             // split a, b, c, G, H vector
             let (a1, a2) = a.split_at_mut(n);
             let (b1, b2) = b.split_at_mut(n);
             let (power_of_y1, power_of_y2) = power_of_y.split_at_mut(n);
+
             let (G1, G2) = G.split_at_mut(n);
             let (H1, H2) = H.split_at_mut(n);
+
             // compute c_L and c_R
             let c_L = util::weighted_inner_product(&a1, &b2, &power_of_y1);
             let c_R = util::weighted_inner_product(&a2, &b1, &power_of_y2);
+
             // random d_L and d_R by prover
-            let d_L: Scalar = Scalar::random(&mut csprng);
-            let d_R: Scalar = Scalar::random(&mut csprng);
+            let d_L: Scalar = Scalar::from(4u8);
+            let d_R: Scalar = Scalar::from(5u8);
+
             // compute L and R
             let y_nhat = power_of_y1[n - 1];
             let y_nhat_inv = y_nhat.invert();
-            let G1_exp: Vec<Scalar> = a2.iter().map(|a2_i| y_nhat * a2_i).collect();
+
             let G2_exp: Vec<Scalar> = a1.iter().map(|a1_i| y_nhat_inv * a1_i).collect();
             let scalars = G2_exp
                 .iter()
@@ -103,7 +115,11 @@ impl WeightedInnerProductProof {
                 .chain(H1.iter())
                 .chain(iter::once(&pk.g))
                 .chain(iter::once(&pk.h));
+
             let L = RistrettoPoint::vartime_multiscalar_mul(scalars, points);
+
+            let G1_exp: Vec<Scalar> = a2.iter().map(|a2_i| y_nhat * a2_i).collect();
+
             let scalars = G1_exp
                 .iter()
                 .chain(b1.iter())
@@ -117,17 +133,22 @@ impl WeightedInnerProductProof {
             let R = RistrettoPoint::vartime_multiscalar_mul(scalars, points);
             L_vec.push(L.compress());
             R_vec.push(R.compress());
+
             // get challenge e
             transcript.append_point(b"L", &(L.compress()));
             transcript.append_point(b"R", &(R.compress()));
-            let e = transcript.challenge_scalar(b"e");
+
+            let e = Scalar::from(7u8);
             let e_inv = e.invert();
             let e_sqr = e * e;
             let e_sqr_inv = e_inv * e_inv;
+
             // update a, b, c, alpha, G, H, P
             P = P + RistrettoPoint::vartime_multiscalar_mul(&[e_sqr, e_sqr_inv], &[L, R]);
+
             let y_nhat_e_inv = y_nhat * e_inv;
             let y_nhat_inv_e = y_nhat_inv * e;
+
             for i in 0..n {
                 a1[i] = a1[i] * e + a2[i] * y_nhat_e_inv;
                 b1[i] = b1[i] * e_inv + b2[i] * e;
@@ -143,12 +164,15 @@ impl WeightedInnerProductProof {
             G = G1;
             H = H1;
             alpha += e_sqr * d_L + e_sqr_inv * d_R;
+
         }
+
         // random r, s, delta, eta
-        let r: Scalar = Scalar::random(&mut csprng);
-        let s: Scalar = Scalar::random(&mut csprng);
-        let delta: Scalar = Scalar::random(&mut csprng);
-        let eta: Scalar = Scalar::random(&mut csprng);
+        let r: Scalar = Scalar::from(33u8);
+        let s: Scalar = Scalar::from(44u8);
+        let delta: Scalar = Scalar::from(88u8);
+        let eta: Scalar = Scalar::from(123u8);
+
         // compute A and B
         let rcbsca = r * power_of_y[0] * b[0] + s * power_of_y[0] * a[0];
         let rcs = r * power_of_y[0] * s;
@@ -161,14 +185,17 @@ impl WeightedInnerProductProof {
             &[rcs, eta],
             &[pk.g, pk.h],
         ).compress();
+
         // get challenge e
         transcript.append_point(b"A", &A);
         transcript.append_point(b"B", &B);
-        let e = transcript.challenge_scalar(b"e");
+        let e = Scalar::from(99u8);
+
         // compute r_prime, s_prime, delta_prime
         let r_prime = r + a[0] * e;
         let s_prime = s + b[0] * e;
         let d_prime = eta + delta * e + alpha * e * e;
+
         WeightedInnerProductProof {
             L_vec: L_vec,
             R_vec: R_vec,
@@ -179,6 +206,7 @@ impl WeightedInnerProductProof {
             d_prime: d_prime,
         }
     }
+
     /**
      * To represent all verification process in one
      * multi-exponentiation, this function gets exponents
@@ -231,9 +259,17 @@ impl WeightedInnerProductProof {
         );
         let g_exp = -self.r_prime * y * self.s_prime + *g_exp_of_commitment * e_sqr;
         let h_exp = -self.d_prime;
+
         let V_exp = V_exp_of_commitment
             .iter()
             .map(|V_exp_of_commitment_i| V_exp_of_commitment_i * e_sqr);
+{
+    let mut i = 0;
+    for x in V_exp.clone() {
+        println!("Vs {}: {}", i, to_hex(&x));
+        i += 1;
+    }
+}
         let expected = RistrettoPoint::optional_multiscalar_mul(
             iter::once(Scalar::one())
                 .chain(iter::once(e))
@@ -284,7 +320,7 @@ impl WeightedInnerProductProof {
         for (L, R) in self.L_vec.iter().zip(self.R_vec.iter()) {
             transcript.validate_and_append_point(b"L", L)?;
             transcript.validate_and_append_point(b"R", R)?;
-            challenges.push(transcript.challenge_scalar(b"e"));
+            challenges.push(Scalar::from(7u8));
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
@@ -305,7 +341,7 @@ impl WeightedInnerProductProof {
 
         transcript.validate_and_append_point(b"A", &self.A)?;
         transcript.validate_and_append_point(b"B", &self.B)?;
-        let e = transcript.challenge_scalar(b"e");
+        let e = Scalar::from(99u8);
 
         // 5. Compute s_vec and s_prime_vec
 
