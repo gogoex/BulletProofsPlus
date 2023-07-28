@@ -8,7 +8,7 @@ fn main() {
     println!("started");
 
     let n = 64;
-    let m = 2;
+    let m = 1;
 
     let curve = Rc::new(Secp256k1::new());
     println!("created secp256k1 curve");
@@ -20,11 +20,12 @@ fn main() {
     // create m commitmentments and add to prover
     let mut prover = RangeProver::new(curve.clone());
     let v1 = 2u64;
-    let v2 = 5u64;
     let gamma1 = curve.f_n.elem(&3u8);
-    let gamma2 = curve.f_n.elem(&7u8);
     prover.commit(&pk, v1, gamma1);
-    prover.commit(&pk, v2, gamma2);
+
+    // let v2 = 5u64;
+    // let gamma2 = curve.f_n.elem(&7u8);
+    // prover.commit(&pk, v2, gamma2);
 
     // build proof
     println!("started proving...");
