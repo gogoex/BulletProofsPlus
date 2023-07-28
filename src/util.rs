@@ -123,7 +123,7 @@ pub fn weighted_inner_product(
     b: &[PrimeFieldElem],
     c: &[PrimeFieldElem],
 ) -> PrimeFieldElem {
-    let mut out = curve.f.elem(&0u8);
+    let mut out = curve.f_n.elem(&0u8);
     for i in 0..a.len() {
         out = &out + (&a[i] * &b[i] * &c[i]);
     }

@@ -5,8 +5,6 @@ authors = ["KyoohyungHan <satanigh89@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-curve25519-dalek = { version = "2", default-features = false, features = ["u64_backend", "nightly", "serde", "alloc"] }
-subtle = { version = "2", default-features = false }
 sha3 = { version = "0.8", default-features = false }
 digest = { version = "0.8", default-features = false }
 rand_core = { version = "0.5", default-features = false, features = ["alloc"] }
@@ -16,7 +14,6 @@ serde = { version = "1", default-features = false, features = ["alloc"] }
 serde_derive = { version = "1", default-features = false }
 thiserror = { version = "1", optional = true }
 merlin = { version = "2", default-features = false }
-clear_on_drop = { version = "0.2", default-features = false, features = ["nightly"] }
 bitvec = "1"
 hex = "0.4.3"
 num-bigint = "0.4.3"
@@ -27,12 +24,3 @@ rand_chacha = "0.3.1"
 [dev-dependencies]
 criterion = "0.3"
 bincode = "1"
-
-[features]
-default = ["std", "avx2_backend"]
-avx2_backend = ["curve25519-dalek/avx2_backend"]
-std = ["rand", "rand/std", "thiserror"]
-
-[[bench]]
-name = "benchmark"
-harness = false

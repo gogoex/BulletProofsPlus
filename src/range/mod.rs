@@ -22,10 +22,8 @@ use crate::{
 use std::rc::Rc;
 
 pub mod prover;
-pub mod verifier;
 
 pub use self::prover::RangeProver;
-pub use self::verifier::RangeVerifier;
 
 #[derive(Clone, Debug)]
 pub struct RangeProof {
@@ -86,7 +84,7 @@ impl RangeProof {
         assert_eq!(pk.H_vec.len(), mn);
 
         // random alpha
-        let alpha = &curve.f.elem(&33u8);
+        let alpha = &curve.f_n.elem(&33u8);
 
         // compute A
         let mut v_bits: Vec<u8> = Vec::with_capacity(mn);
@@ -107,11 +105,11 @@ impl RangeProof {
             A = A + point;
             i += 1;
         }
-        let y = &curve.f.elem(&12u8);
-        let z = &curve.f.elem(&23u8);
+        let y = &curve.f_n.elem(&12u8);
+        let z = &curve.f_n.elem(&23u8);
 
         // compute d
-        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f.elem(&2u64)).take(n).collect();
+        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f_n.elem(&2u64)).take(n).collect();
         let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(&y).take(mn).collect();
         let power_of_y_rev = power_of_y.iter().rev();
         let z_sqr = &(z * z);
@@ -137,13 +135,13 @@ impl RangeProof {
             .map(|power_of_z_i| power_of_z_i * power_of_y_mn_plus_1)
             .collect();
 
-        let mut g_exp = curve.f.elem(&0u8);
+        let mut g_exp = curve.f_n.elem(&0u8);
         for x in &power_of_y {
             g_exp = &g_exp + x;
         }
         g_exp = g_exp * (z - z_sqr);
 
-        let mut d_sum = curve.f.elem(&0u8);
+        let mut d_sum = curve.f_n.elem(&0u8);
         for x in d {
             d_sum = &d_sum + x;
         }
@@ -156,7 +154,7 @@ impl RangeProof {
         }
 
         let mut mv = MulVec::new();
-        mv.add_scalar(&curve.f.elem(&1u8));
+        mv.add_scalar(&curve.f_n.elem(&1u8));
         mv.add_scalar(&G_vec_sum_exp);
         mv.add_scalars(&H_exp);
         mv.add_scalar(&g_exp);
@@ -171,7 +169,7 @@ impl RangeProof {
         let A_hat = mv.calculate(&curve);
 
         // compute a_vec, b_vec, alpha_hat
-        let one = &curve.f.elem(&1u8);
+        let one = &curve.f_n.elem(&1u8);
         let nz = &z.negate();
         let one_minus_z = &(one - z);
 
@@ -195,7 +193,7 @@ impl RangeProof {
             .zip(gamma_vec.iter())
             .map(|(power_of_z_i, gamma_i)| power_of_z_i * gamma_i )
             .collect();
-        let mut power_of_z_gamma_sum = curve.f.elem(&0u8);
+        let mut power_of_z_gamma_sum = curve.f_n.elem(&0u8);
         for x in power_of_z_gamma_vec {
             power_of_z_gamma_sum = power_of_z_gamma_sum + x;
         }
@@ -230,13 +228,13 @@ impl RangeProof {
         let mn = n * m;
 
         // 1. Recompute y and z
-        let y = &curve.f.elem(&12u8);
-        let z = &curve.f.elem(&23u8);
+        let y = &curve.f_n.elem(&12u8);
+        let z = &curve.f_n.elem(&23u8);
         let minus_z = &z.negate();
         let z_sqr = &(z * z);
 
         // 2. Compute power of two, power of y, power of z
-        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f.elem(&2u64)).take(n).collect();
+        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f_n.elem(&2u64)).take(n).collect();
         let mut power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(&y).take(mn + 1).collect();
         let power_of_y_mn_plus_1 = match power_of_y.pop() {
             Some(point) => point,
@@ -281,7 +279,7 @@ impl RangeProof {
             .collect();
 
         let sum_y = util::sum_of_powers_type2(&y, mn);
-        let sum_2 = util::sum_of_powers_type1(&curve.f.elem(&2u64), n);
+        let sum_2 = util::sum_of_powers_type1(&curve.f_n.elem(&2u64), n);
         let sum_z = util::sum_of_powers_type2(&z_sqr, m);
 
         let g_exp = -r_prime * s_prime * y * e_sqr_inv + (sum_y * (z - z_sqr) - &power_of_y_mn_plus_1 * z * sum_2 * sum_z);
@@ -294,7 +292,7 @@ impl RangeProof {
 
         // 7. Compute RHS / LHS
         let mut mv = MulVec::new();
-        mv.add_scalar(&curve.f.elem(&1u8));
+        mv.add_scalar(&curve.f_n.elem(&1u8));
         mv.add_scalar(&e_inv);
         mv.add_scalar(&e_sqr_inv);
         mv.add_scalar(&g_exp);
@@ -346,7 +344,7 @@ impl RangeProof {
 //         let mut prover = RangeProver::new(curve);
 
 //         for _i in 0..m {
-//             prover.commit(&pk, 31u64, curve.f.rand_elem(true));
+//             prover.commit(&pk, 31u64, curve.f_n.rand_elem(true));
 //         }
 
 //         let proof: RangeProof = RangeProof::prove(

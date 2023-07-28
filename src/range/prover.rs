@@ -39,7 +39,7 @@ impl RangeProver {
         self.gamma_vec.push(gamma.clone());
         self.commitment_vec.push(
             pk.commitment(
-                &PrimeFieldElem::new(&Rc::new(self.curve.f.clone()), &v),
+                &PrimeFieldElem::new(&Rc::new(self.curve.f_n.clone()), &v),
                 &gamma
             )
         );

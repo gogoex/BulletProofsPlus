@@ -3,13 +3,10 @@ use crate::secp256k1::building_block::{
     prime_field_elem::PrimeFieldElem,
     prime_field_elems::PrimeFieldElems,
   },
-  random_number::RandomNumber,
   to_bigint::ToBigInt as ToBigIntType,
   to_biguint::ToBigUint,
 };
 use num_bigint::{BigUint, BigInt, Sign};
-use num_traits::Zero as NumTraitsZero;
-use rand_chacha::rand_core::RngCore as ChaChaRndCore;
 use std::rc::Rc;
 
 #[derive(Debug, Clone, Hash)]
@@ -62,18 +59,19 @@ impl PrimeField {
   }
 
   // returns FieldElem in range [1, field_order-1]
-  pub fn rand_elem(&self, exclude_zero: bool) -> PrimeFieldElem {
-    let buf_size = (self.order.bits() as f64 / 8f64).ceil() as usize;
-    let mut buf = vec![0u8; buf_size];
-    let f = Rc::new(self.clone());
-    loop {
-      let mut rand = RandomNumber::new();
-      rand.gen.fill_bytes(&mut buf);
-      let x = PrimeFieldElem::new(&f, &BigUint::from_bytes_be(&buf));
-      if !exclude_zero || x.e != BigUint::zero() {
-        return x;
-      }
-    }
+  pub fn rand_elem(&self, _exclude_zero: bool) -> PrimeFieldElem {
+    self.elem(&7u8)
+    // let buf_size = (self.order.bits() as f64 / 8f64).ceil() as usize;
+    // let mut buf = vec![0u8; buf_size];
+    // let f = Rc::new(self.clone());
+    // loop {
+    //   let mut rand = RandomNumber::new();
+    //   rand.gen.fill_bytes(&mut buf);
+    //   let x = PrimeFieldElem::new(&f, &BigUint::from_bytes_be(&buf));
+    //   if !exclude_zero || x.e != BigUint::zero() {
+    //     return x;
+    //   }
+    // }
   }
 
   pub fn rand_elems(&self, n: usize, exclude_zero: bool) -> PrimeFieldElems {

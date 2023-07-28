@@ -10,4 +10,3 @@ pub mod secp256k1;
 pub use crate::publickey::PublicKey;
 pub use crate::range::RangeProof;
 pub use crate::range::prover::RangeProver;
-pub use crate::range::verifier::RangeVerifier;

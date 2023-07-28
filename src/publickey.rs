@@ -25,16 +25,16 @@ impl PublicKey {
         let curve = Secp256k1::new();
 
         let g = curve.g();
-        let h = curve.g() * curve.f.elem(&2u8);
+        let h = curve.g() * curve.f_n.elem(&2u8);
 
         let mut G_vec: Vec<AffinePoint> = vec![];
         for _i in 0..length {
-            let p = curve.g() * curve.f.rand_elem(true);
+            let p = curve.g() * curve.f_n.rand_elem(true);
             G_vec.push(p);
         }
         let mut H_vec: Vec<AffinePoint> = vec![];
         for _i in 0..length {
-            let p = curve.g() * curve.f.rand_elem(true);
+            let p = curve.g() * curve.f_n.rand_elem(true);
             H_vec.push(p);
         }
 

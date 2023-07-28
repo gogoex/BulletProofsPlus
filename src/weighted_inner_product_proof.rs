@@ -91,8 +91,8 @@ impl WeightedInnerProductProof {
             let c_R = util::weighted_inner_product(&curve, &a2, &b1, &power_of_y2);
 
             // random d_L and d_R by prover
-            let d_L = curve.f.elem(&4u8);
-            let d_R = curve.f.elem(&5u8);
+            let d_L = curve.f_n.elem(&4u8);
+            let d_R = curve.f_n.elem(&5u8);
 
             // compute L and R
             let y_nhat = &power_of_y1[n - 1];
@@ -128,7 +128,7 @@ impl WeightedInnerProductProof {
             R_vec.push(R.clone());
 
             // get challenge e
-            let e = curve.f.elem(&7u8);
+            let e = curve.f_n.elem(&7u8);
             let e_inv = e.inv();
             let e_sqr = &e * &e;
             let e_sqr_inv = &e_inv * &e_inv;
@@ -173,10 +173,10 @@ impl WeightedInnerProductProof {
         }
 
         // random r, s, delta, eta
-        let r = curve.f.elem(&33u8);
-        let s = curve.f.elem(&44u8);
-        let delta = curve.f.elem(&88u8);
-        let eta = curve.f.elem(&123u8);
+        let r = curve.f_n.elem(&33u8);
+        let s = curve.f_n.elem(&44u8);
+        let delta = curve.f_n.elem(&88u8);
+        let eta = curve.f_n.elem(&123u8);
 
         // compute A and B
         let rcbsca = &r * &power_of_y[0] * &b[0] + &s * &power_of_y[0] * &a[0];
@@ -201,7 +201,7 @@ impl WeightedInnerProductProof {
         let B = mv_B.calculate(&curve);
 
         // get challenge e
-        let e = curve.f.elem(&99u8);
+        let e = curve.f_n.elem(&99u8);
 
         // compute r_prime, s_prime, delta_prime
         let r_prime = &r + &a[0] * &e;
@@ -287,7 +287,7 @@ impl WeightedInnerProductProof {
             .collect();
 
         let mut mv = MulVec::new();
-        mv.add_scalar(&curve.f.elem(&1u8));
+        mv.add_scalar(&curve.f_n.elem(&1u8));
         mv.add_scalar(&e);
         mv.add_scalar(&e_sqr);
         mv.add_scalar(&g_exp);
@@ -343,7 +343,7 @@ impl WeightedInnerProductProof {
         // 1. Recompute e_1, e_2, ..., e_k based on the proof transcript
         let mut challenges = Vec::with_capacity(logn);
         for _i in 0..self.L_vec.len() {
-            challenges.push(curve.f.elem(&7u8));
+            challenges.push(curve.f_n.elem(&7u8));
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
@@ -359,7 +359,7 @@ impl WeightedInnerProductProof {
         let challenges_inv_sqr = challenges_inv;
 
         // 4. Recompute e
-        let e = curve.f.elem(&99u8);
+        let e = curve.f_n.elem(&99u8);
 
         // 5. Compute s_vec and s_prime_vec
         let mut s_vec = Vec::with_capacity(n);

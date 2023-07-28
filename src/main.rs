@@ -1,6 +1,6 @@
 use bulletproofsplus::PublicKey;
 #[allow(unused_imports)]
-use bulletproofsplus::range::{RangeProof, RangeProver, RangeVerifier};
+use bulletproofsplus::range::{RangeProof, RangeProver};
 use bulletproofsplus::secp256k1::building_block::secp256k1::secp256k1::Secp256k1;
 use std::rc::Rc;
 
@@ -17,8 +17,8 @@ fn main() {
     let mut prover = RangeProver::new(curve.clone());
     let v1 = 2u64;
     let v2 = 5u64;
-    let gamma1 = curve.f.elem(&3u8);
-    let gamma2 = curve.f.elem(&7u8);
+    let gamma1 = curve.f_n.elem(&3u8);
+    let gamma2 = curve.f_n.elem(&7u8);
     prover.commit(&pk, v1, gamma1);
     prover.commit(&pk, v2, gamma2);
 
