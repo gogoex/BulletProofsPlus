@@ -9,6 +9,7 @@ use crate::secp256k1::building_block::{
         secp256k1::Secp256k1,
     },
 };
+use std::rc::Rc;
 
 /**
  * Publickey
@@ -21,17 +22,19 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new(length: usize) -> Self {
-        let curve = Secp256k1::new();
-
+    pub fn new(curve: &Rc<Secp256k1>, length: usize) -> Self {
+        // g = 1g
         let g = curve.g();
         let h = curve.g() * curve.f_n.elem(&2u8);
 
+        // G = 3g, 6g, 9g, ...
         let mut G_vec: Vec<AffinePoint> = vec![];
         for _i in 0..length {
             let p = curve.g() * curve.f_n.rand_elem(true);
             G_vec.push(p);
         }
+
+        // H = 5g, 10g, 15g, ...
         let mut H_vec: Vec<AffinePoint> = vec![];
         for _i in 0..length {
             let p = curve.g() * curve.f_n.rand_elem(true);
