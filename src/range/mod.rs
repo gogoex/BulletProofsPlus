@@ -20,6 +20,7 @@ use crate::publickey::PublicKey;
 use crate::weighted_inner_product_proof::WeightedInnerProductProof;
 use crate::transcript::TranscriptProtocol;
 use crate::util;
+use crate::mulvec::MulVec;
 
 pub mod prover;
 pub mod verifier;
@@ -89,7 +90,7 @@ impl RangeProof {
             )
         }
     }
-    //
+
     fn prove_single(
         transcript: &mut Transcript,
         pk: &PublicKey,
@@ -132,7 +133,9 @@ impl RangeProof {
             .clone()
             .into_iter()
             .rev();
+
         let G_vec_sum: RistrettoPoint = pk.G_vec.iter().sum();
+
         let G_vec_sum_exp = -z;
         let H_exp: Vec<Scalar> = power_of_two
             .iter()
@@ -144,29 +147,30 @@ impl RangeProof {
         g_exp *= z - z * z;
         g_exp -= (util::scalar_exp_vartime(&two, n as u64) - one) * V_exp * z;
 
-        let A_hat = match RistrettoPoint::optional_multiscalar_mul(
-            iter::once(Scalar::one())
-                .chain(iter::once(G_vec_sum_exp))
-                .chain(H_exp.iter().cloned())
-                .chain(iter::once(g_exp))
-                .chain(iter::once(V_exp)),
-            iter::once(Some(A))
-                .chain(iter::once(Some(G_vec_sum)))
-                .chain(pk.H_vec.iter().map(|&x| Some(x)))
-                .chain(iter::once(Some(pk.g)))
-                .chain(iter::once(commitment.decompress())),
-        ) {
-            Some(point) => point,
-            None => panic!("optional_multiscalar_mul error"),
-        };
+        let mut mv = MulVec::new();
+        mv.add_scalar(&Scalar::one());
+        mv.add_scalar(&G_vec_sum_exp);
+        mv.add_scalars(&H_exp);
+        mv.add_scalar(&g_exp);
+        mv.add_scalar(&V_exp);
+
+        mv.add_point(&A);
+        mv.add_point(&G_vec_sum);
+        mv.add_points(&pk.H_vec);
+        mv.add_point(&pk.g);
+        mv.add_point(&commitment.decompress().unwrap());
+
+        let A_hat = mv.calculate();
 
         // compute a_vec, b_vec, alpha_hat
         let nz = -z;
         let one_minus_z = one - z;
+
         let a_vec: Vec<Scalar> = v_bits
             .iter()
             .map(|v_bits_i| if *v_bits_i == 0 { nz.clone() } else { one_minus_z.clone() })
             .collect();
+
         let b_vec: Vec<Scalar> = H_exp
             .iter()
             .zip(v_bits.iter())
@@ -191,6 +195,7 @@ impl RangeProof {
             proof: proof,
         }
     }
+
     fn prove_multiple(
         transcript: &mut Transcript,
         pk: &PublicKey,

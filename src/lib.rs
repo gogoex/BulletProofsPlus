@@ -1,6 +1,7 @@
 extern crate alloc;
 
 mod util;
+pub mod mulvec;
 mod errors;
 pub mod publickey;
 mod weighted_inner_product_proof;
