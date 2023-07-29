@@ -478,7 +478,6 @@ impl PrimeFieldElem {
       inv_xs.push(x.inv());
       prod = prod * x.inv();
     }
-    inv_xs.reverse();
     (prod, inv_xs)
   }
 }

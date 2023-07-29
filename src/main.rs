@@ -7,7 +7,7 @@ use std::rc::Rc;
 fn main() {
     println!("started");
 
-    let n = 64;
+    let n = 8;
     let m = 1;
 
     let curve = Rc::new(Secp256k1::new());

@@ -269,13 +269,13 @@ impl WeightedInnerProductProof {
             .zip(G_exp_of_commitment.iter())
             .zip(util::exp_iter_type2(&y.inv()))
             .map(|((s_vec_i, g_exp_of_comm_i), power_of_y_vec_inv_i)| {
-                -s_vec_i * power_of_y_vec_inv_i * r_prime_e_y + g_exp_of_comm_i * e_sqr
+                s_vec_i.negate() * power_of_y_vec_inv_i * r_prime_e_y + g_exp_of_comm_i * e_sqr
             })
             .collect();
 
         let H_exp: Vec<PrimeFieldElem> = s_prime_vec.zip(H_exp_of_commitment.iter()).map(
             |(s_prime_vec_i, h_exp_of_comm_i)| {
-                -s_prime_vec_i * s_prime_e + h_exp_of_comm_i * e_sqr
+                s_prime_vec_i.negate() * s_prime_e + h_exp_of_comm_i * e_sqr
             },
         ).collect();
 
@@ -347,10 +347,10 @@ impl WeightedInnerProductProof {
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
-        let (allinv, mut challenges_inv) = PrimeFieldElem::batch_invert(&challenges);
+        let (allinv, mut challenges_inv) =
+            PrimeFieldElem::batch_invert(&challenges);
 
         // 3. Compute e_i^2 and (1/e_i)^2
-
         for i in 0..logn {
             challenges[i] = &challenges[i] * &challenges[i];
             challenges_inv[i] = &challenges_inv[i] * &challenges_inv[i];

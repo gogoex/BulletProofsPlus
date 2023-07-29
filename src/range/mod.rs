@@ -110,7 +110,7 @@ impl RangeProof {
         let mut i = 0;
         for (G_i, H_i) in pk.G_vec.iter().zip(pk.H_vec.iter()) {
             v_bits.push(((v >> i) & 1) as u8);
-            let mut point = H_i.inv();  // originally -H_i
+            let mut point = H_i.inv().clone();  // originally -H_i
             if v_bits[i] != 0 { point = G_i.clone() };
             A = A + point;
             i += 1;
@@ -126,27 +126,30 @@ impl RangeProof {
         let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f_n.elem(&2u8)).take(n).collect();
         let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(y).take(n).collect();
         let power_of_y_rev = power_of_y.clone().into_iter().rev();
+
         let mut G_vec_sum = pk.g.zero();
         for p in &pk.G_vec {
             G_vec_sum = G_vec_sum + p;
         }
-        let G_vec_sum_exp = -z;
+
+        let G_vec_sum_exp = z.negate();
         let H_exp: Vec<PrimeFieldElem> = power_of_two
             .iter()
             .zip(power_of_y_rev)
             .map(|(power_of_two_i, power_of_y_rev_i)| power_of_two_i * power_of_y_rev_i + z)
             .collect();
+
         let V_exp = util::scalar_exp_vartime(&y, (n + 1) as u64);
 
         let mut g_exp = curve.f.elem(&0u8);
         for x in &power_of_y {
             g_exp = g_exp + x;
         }
-        g_exp = g_exp * (z - z * z);
-        g_exp = g_exp - ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z);
+        g_exp = g_exp * (z + (z * z).negate());
+        g_exp = g_exp + ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z).negate();
 
         let mut mv = MulVec::new();
-        mv.add_scalar(&curve.f.elem(&1u8));
+        mv.add_scalar(&curve.f_n.elem(&1u8));
         mv.add_scalar(&G_vec_sum_exp);
         mv.add_scalars(&H_exp);
         mv.add_scalar(&g_exp);
@@ -167,14 +170,17 @@ impl RangeProof {
             .iter()
             .map(|v_bits_i| if *v_bits_i == 0 { nz.clone() } else { one_minus_z.clone() })
             .collect();
+
         let b_vec: Vec<PrimeFieldElem> = H_exp
             .iter()
             .zip(v_bits.iter())
             .map(|(H_exp_i, v_bits_i)| {
-                if *v_bits_i == 0 { (H_exp_i - one).clone() } else { H_exp_i.clone() }
+                if *v_bits_i == 0 { (H_exp_i + one.negate()).clone() } else { H_exp_i.clone() }
             })
             .collect();
+
         let alpha_hat = alpha + gamma * &V_exp;
+
         // generate weighted inner product proof
         let proof = WeightedInnerProductProof::prove(
             curve.clone(),
@@ -211,22 +217,25 @@ impl RangeProof {
         // compute exponent of A_hat
         let one = &curve.f_n.elem(&1u8);
         let two = &curve.f_n.elem(&2u64);
+
         let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f_n.elem(&2u64)).take(n).collect();
         let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(y).take(n).collect();
         let power_of_y_rev = power_of_y.iter().rev();
-        let G_exp: Vec<PrimeFieldElem> = vec![-z; n];
+
+        let G_exp: Vec<PrimeFieldElem> = vec![z.negate(); n];
         let H_exp: Vec<PrimeFieldElem> = power_of_two
             .iter()
             .zip(power_of_y_rev)
             .map(|(power_of_two_i, power_of_y_rev_i)| power_of_two_i * power_of_y_rev_i + z)
             .collect();
         let V_exp = util::scalar_exp_vartime(&y, (n + 1) as u64);
+
         let mut g_exp: PrimeFieldElem = curve.f_n.elem(&0u8);
         for x in &power_of_y {
             g_exp = g_exp + x;
         }
-        g_exp = g_exp * (z - z * z);
-        g_exp = g_exp - ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z);
+        g_exp = g_exp * (z + (z * z).negate());
+        g_exp = g_exp + ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z).negate();
 
         self.proof.verify(
             curve,

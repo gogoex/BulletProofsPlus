@@ -29,18 +29,18 @@ impl PublicKey {
 
         // G = 3g, 6g, 9g, ...
         let mut G_vec: Vec<AffinePoint> = vec![];
-        for _i in 0..length {
-            let p = curve.g() * curve.f_n.rand_elem(true);
+        for i in 0..length {
+            let p = curve.g() * curve.f_n.elem(&((i + 1) * 3));
             G_vec.push(p);
         }
 
         // H = 5g, 10g, 15g, ...
         let mut H_vec: Vec<AffinePoint> = vec![];
-        for _i in 0..length {
-            let p = curve.g() * curve.f_n.rand_elem(true);
+        for i in 0..length {
+            let p = curve.g() * curve.f_n.elem(&((i + 1) * 3));
             H_vec.push(p);
         }
-
+        println!("G_vec.len={}", G_vec.len());
         PublicKey {
             g: g,
             h: h,
