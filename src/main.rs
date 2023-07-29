@@ -35,5 +35,5 @@ fn main() {
     );
     assert_eq!(result, Ok(()));
 
-    println!("done");
+    println!("succeeded");
 }

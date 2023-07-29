@@ -12,11 +12,13 @@ pub struct ScalarExp {
 
 impl Iterator for ScalarExp {
     type Item = Scalar;
+
     fn next(&mut self) -> Option<Scalar> {
         let exp_x = self.next_exp_x;
         self.next_exp_x *= self.x;
         Some(exp_x)
     }
+
     fn size_hint(&self) -> (usize, Option<usize>) {
         (usize::max_value(), None)
     }
@@ -38,6 +40,7 @@ pub fn exp_iter_type2(x: Scalar) -> ScalarExp {
 pub fn scalar_exp_vartime(x: &Scalar, mut n: u64) -> Scalar {
     let mut result = Scalar::one();
     let mut aux = *x; // x, x^2, x^4, x^8, ...
+
     while n > 0 {
         let bit = n & 1;
         if bit == 1 {
@@ -70,7 +73,11 @@ pub fn sum_of_powers_type1(x: &Scalar, n: usize) -> Scalar {
 
 #[allow(dead_code)]
 fn sum_of_powers_slow_type1(x: &Scalar, n: usize) -> Scalar {
-    exp_iter_type1(*x).take(n).sum()
+    let mut sum = Scalar::zero();
+    for x in exp_iter_type2(x.clone()).take(n) {
+        sum = sum + x;
+    }
+    sum
 }
 
 #[allow(dead_code)]
@@ -84,6 +91,7 @@ pub fn sum_of_powers_type2(x: &Scalar, n: usize) -> Scalar {
     let mut m = n;
     let mut result = x + x * x;
     let mut factor = *x;
+
     while m > 2 {
         factor = factor * factor;
         result = result + factor * result;
@@ -94,7 +102,11 @@ pub fn sum_of_powers_type2(x: &Scalar, n: usize) -> Scalar {
 
 #[allow(dead_code)]
 fn sum_of_powers_slow_type2(x: &Scalar, n: usize) -> Scalar {
-    exp_iter_type2(*x).take(n).sum()
+    let mut sum = Scalar::zero();
+    for x in exp_iter_type2(x.clone()).take(n) {
+        sum = sum + x;
+    }
+    sum
 }
 
 #[allow(dead_code)]

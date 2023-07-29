@@ -3,13 +3,11 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use core::iter;
 use rand_core::OsRng;
 use std::mem;
 
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::traits::VartimeMultiscalarMul;
 use merlin::Transcript;
 
 use crate::util;
@@ -332,7 +330,19 @@ impl WeightedInnerProductProof {
             Err(ProofError::VerificationError)
         }
     }
-    //
+
+    pub fn batch_invert(xs: &Vec<Scalar>) -> (Scalar, Vec<Scalar>) {
+        let mut prod = Scalar::one();
+        let mut inv_xs = vec![];
+
+        for x in xs {
+            inv_xs.push(x.invert());
+            prod = prod * x.invert();
+        }
+
+        (prod, inv_xs)
+    }
+
     pub fn verification_scalars(
         &self,
         n: usize,
@@ -347,7 +357,6 @@ impl WeightedInnerProductProof {
         transcript.weighted_inner_product_domain_sep(power_of_y_vec);
 
         // 1. Recompute e_1, e_2, ..., e_k based on the proof transcript
-        
         let mut challenges = Vec::with_capacity(logn);
         for (L, R) in self.L_vec.iter().zip(self.R_vec.iter()) {
             transcript.validate_and_append_point(b"L", L)?;
@@ -356,12 +365,12 @@ impl WeightedInnerProductProof {
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
-
-        let mut challenges_inv = challenges.clone();
-        let allinv = Scalar::batch_invert(&mut challenges_inv);
+        // let mut challenges_inv = challenges.clone();
+        // let allinv = Scalar::batch_invert(&mut challenges_inv);
+        let (allinv, mut challenges_inv) =
+            WeightedInnerProductProof::batch_invert(&challenges);
 
         // 3. Compute e_i^2 and (1/e_i)^2
-
         for i in 0..logn {
             challenges[i] = challenges[i] * challenges[i];
             challenges_inv[i] = challenges_inv[i] * challenges_inv[i];
@@ -370,25 +379,20 @@ impl WeightedInnerProductProof {
         let challenges_inv_sqr = challenges_inv;
 
         // 4. Recompute e
-
         transcript.validate_and_append_point(b"A", &self.A)?;
         transcript.validate_and_append_point(b"B", &self.B)?;
         let e = transcript.challenge_scalar(b"e");
-        
-        // 5. Compute s_vec and s_prime_vec
 
+        // 5. Compute s_vec and s_prime_vec
         let mut s_vec = Vec::with_capacity(n);
         s_vec.push(allinv);
+
         for i in 1..n {
             let log_i = (32 - 1 - (i as u32).leading_zeros()) as usize;
             let k = 1 << log_i;
             let u_log_i_sq = challenges_sqr[(logn - 1) - log_i];
             s_vec.push(s_vec[i - k] * u_log_i_sq);
         }
-        // let s_prime_vec: Vec<Scalar> = s_vec.clone().into_iter().rev().collect();
-        // let s_vec = s_vec.iter().zip(util::exp_iter_type2(y.invert()))
-        //     .map(|(s_vec_i, power_of_y_vec_inv_i)| s_vec_i * power_of_y_vec_inv_i * y)
-        //     .collect();
 
         Ok((challenges_sqr, challenges_inv_sqr, s_vec, e))
     }
