@@ -12,7 +12,7 @@ use std::mem;
 
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::traits::{IsIdentity, VartimeMultiscalarMul};
+use curve25519_dalek::traits::{Identity, IsIdentity, VartimeMultiscalarMul};
 use merlin::Transcript;
 
 use crate::errors::ProofError;
@@ -134,15 +134,21 @@ impl RangeProof {
             .into_iter()
             .rev();
 
-        let G_vec_sum: RistrettoPoint = pk.G_vec.iter().sum();
+        let mut G_vec_sum = CompressedRistretto::identity().decompress().unwrap();
+        for p in &pk.G_vec {
+            G_vec_sum = G_vec_sum + p;
+        }
 
         let G_vec_sum_exp = -z;
+
         let H_exp: Vec<Scalar> = power_of_two
             .iter()
             .zip(power_of_y_rev)
             .map(|(power_of_two_i, power_of_y_rev_i)| power_of_two_i * power_of_y_rev_i + z)
             .collect();
+
         let V_exp = util::scalar_exp_vartime(&y, (n + 1) as u64);
+
         let mut g_exp: Scalar = power_of_y.iter().sum();
         g_exp *= z - z * z;
         g_exp -= (util::scalar_exp_vartime(&two, n as u64) - one) * V_exp * z;
@@ -178,6 +184,7 @@ impl RangeProof {
                 if *v_bits_i == 0 { (H_exp_i - one).clone() } else { H_exp_i.clone() }
             })
             .collect();
+
         let alpha_hat = alpha + gamma * V_exp;
 
         // generate weighted inner product proof

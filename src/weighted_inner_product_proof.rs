@@ -16,6 +16,7 @@ use crate::util;
 use crate::errors::ProofError;
 use crate::publickey::PublicKey;
 use crate::transcript::TranscriptProtocol;
+use crate::mulvec::MulVec;
 
 /**
  * Wieghted inner product proof
@@ -49,74 +50,90 @@ impl WeightedInnerProductProof {
     ) -> Self {
         // random number generator
         let mut csprng = OsRng;
+
         // create slices G, H, a, b, c
         let mut G = &mut pk.G_vec.clone()[..];
         let mut H = &mut pk.H_vec.clone()[..];
         let mut a = &mut a_vec.clone()[..];
         let mut b = &mut b_vec.clone()[..];
         let mut power_of_y = &mut power_of_y_vec.clone()[..];
+
         // create copyed mutable scalars
         let mut alpha = gamma;
+
         // create copyed mutable commitment
         let mut P = commitment;
+
         // all of the input vectors must have the same length
         let mut n = G.len();
         assert_eq!(H.len(), n);
         assert_eq!(a.len(), n);
         assert_eq!(b.len(), n);
         assert_eq!(power_of_y.len(), n);
+
         // the length should be power of two
         assert!(n.is_power_of_two());
+
         // set transcript weight vector
         transcript.weighted_inner_product_domain_sep(power_of_y_vec);
+
         // allocate memory for L_vec and R_vec
         let logn = n.next_power_of_two().trailing_zeros() as usize;
         let mut L_vec: Vec<CompressedRistretto> = Vec::with_capacity(logn);
         let mut R_vec: Vec<CompressedRistretto> = Vec::with_capacity(logn);
+
         // n > 1 case
         while n != 1 {
             n = n / 2;
+
             // split a, b, c, G, H vector
             let (a1, a2) = a.split_at_mut(n);
             let (b1, b2) = b.split_at_mut(n);
             let (power_of_y1, power_of_y2) = power_of_y.split_at_mut(n);
             let (G1, G2) = G.split_at_mut(n);
             let (H1, H2) = H.split_at_mut(n);
+
             // compute c_L and c_R
             let c_L = util::weighted_inner_product(&a1, &b2, &power_of_y1);
             let c_R = util::weighted_inner_product(&a2, &b1, &power_of_y2);
+
             // random d_L and d_R by prover
             let d_L: Scalar = Scalar::random(&mut csprng);
             let d_R: Scalar = Scalar::random(&mut csprng);
+
             // compute L and R
             let y_nhat = power_of_y1[n - 1];
             let y_nhat_inv = y_nhat.invert();
             let G1_exp: Vec<Scalar> = a2.iter().map(|a2_i| y_nhat * a2_i).collect();
             let G2_exp: Vec<Scalar> = a1.iter().map(|a1_i| y_nhat_inv * a1_i).collect();
-            let scalars = G2_exp
-                .iter()
-                .chain(b2.iter())
-                .chain(iter::once(&c_L))
-                .chain(iter::once(&d_L));
-            let points = G2
-                .iter()
-                .chain(H1.iter())
-                .chain(iter::once(&pk.g))
-                .chain(iter::once(&pk.h));
-            let L = RistrettoPoint::vartime_multiscalar_mul(scalars, points);
-            let scalars = G1_exp
-                .iter()
-                .chain(b1.iter())
-                .chain(iter::once(&c_R))
-                .chain(iter::once(&d_R));
-            let points = G1
-                .iter()
-                .chain(H2.iter())
-                .chain(iter::once(&pk.g))
-                .chain(iter::once(&pk.h));
-            let R = RistrettoPoint::vartime_multiscalar_mul(scalars, points);
+
+            let mut mv_g2 = MulVec::new();
+            mv_g2.add_scalars(&G2_exp);
+            mv_g2.add_scalars(&b2.to_vec());
+            mv_g2.add_scalar(&c_L);
+            mv_g2.add_scalar(&d_L);
+
+            mv_g2.add_points(&G2.to_vec());
+            mv_g2.add_points(&H1.to_vec());
+            mv_g2.add_point(&pk.g);
+            mv_g2.add_point(&pk.h);
+            let L = mv_g2.calculate();
+
+            let mut mv_g1 = MulVec::new();
+            mv_g1.add_scalars(&G1_exp);
+            mv_g1.add_scalars(&b1.to_vec());
+            mv_g1.add_scalar(&c_R);
+            mv_g1.add_scalar(&d_R);
+
+            mv_g1.add_points(&G1.to_vec());
+            mv_g1.add_points(&H2.to_vec());
+            mv_g1.add_point(&pk.g);
+            mv_g1.add_point(&pk.h);
+            let R = mv_g1.calculate();
+
             L_vec.push(L.compress());
             R_vec.push(R.compress());
+
             // get challenge e
             transcript.append_point(b"L", &(L.compress()));
             transcript.append_point(b"R", &(R.compress()));
@@ -124,18 +141,36 @@ impl WeightedInnerProductProof {
             let e_inv = e.invert();
             let e_sqr = e * e;
             let e_sqr_inv = e_inv * e_inv;
+
             // update a, b, c, alpha, G, H, P
-            P = P + RistrettoPoint::vartime_multiscalar_mul(&[e_sqr, e_sqr_inv], &[L, R]);
+            let mut mv1 = MulVec::new();
+            mv1.add_scalar(&e_sqr);
+            mv1.add_scalar(&e_sqr_inv);
+            mv1.add_point(&L);
+            mv1.add_point(&R);
+            mv1.calculate();
+            P = P + mv1.calculate();
+
             let y_nhat_e_inv = y_nhat * e_inv;
             let y_nhat_inv_e = y_nhat_inv * e;
+
             for i in 0..n {
                 a1[i] = a1[i] * e + a2[i] * y_nhat_e_inv;
                 b1[i] = b1[i] * e_inv + b2[i] * e;
-                G1[i] = RistrettoPoint::vartime_multiscalar_mul(
-                    &[e_inv, y_nhat_inv_e],
-                    &[G1[i], G2[i]],
-                );
-                H1[i] = RistrettoPoint::vartime_multiscalar_mul(&[e, e_inv], &[H1[i], H2[i]]);
+
+                let mut mv_g = MulVec::new();
+                mv_g.add_scalar(&e_inv);
+                mv_g.add_scalar(&y_nhat_inv_e);
+                mv_g.add_point(&G1[i]);
+                mv_g.add_point(&G2[i]);
+                G1[i] = mv_g.calculate();
+
+                let mut mv_h = MulVec::new();
+                mv_h.add_scalar(&e);
+                mv_h.add_scalar(&e_inv);
+                mv_h.add_point(&H1[i]);
+                mv_h.add_point(&H2[i]);
+                H1[i] = mv_h.calculate();
             }
             a = a1;
             b = b1;
@@ -144,31 +179,45 @@ impl WeightedInnerProductProof {
             H = H1;
             alpha += e_sqr * d_L + e_sqr_inv * d_R;
         }
+
         // random r, s, delta, eta
         let r: Scalar = Scalar::random(&mut csprng);
         let s: Scalar = Scalar::random(&mut csprng);
         let delta: Scalar = Scalar::random(&mut csprng);
         let eta: Scalar = Scalar::random(&mut csprng);
+
         // compute A and B
         let rcbsca = r * power_of_y[0] * b[0] + s * power_of_y[0] * a[0];
         let rcs = r * power_of_y[0] * s;
-        let A = RistrettoPoint::vartime_multiscalar_mul(
-            &[r, s, rcbsca, delta],
-            &[G[0], H[0], pk.g, pk.h],
-        )
-        .compress();
-        let B = RistrettoPoint::vartime_multiscalar_mul(
-            &[rcs, eta],
-            &[pk.g, pk.h],
-        ).compress();
+
+        let mut mv_A = MulVec::new();
+        mv_A.add_scalar(&r);
+        mv_A.add_scalar(&s);
+        mv_A.add_scalar(&rcbsca);
+        mv_A.add_scalar(&delta);
+        mv_A.add_point(&G[0]);
+        mv_A.add_point(&H[0]);
+        mv_A.add_point(&pk.g);
+        mv_A.add_point(&pk.h);
+        let A = mv_A.calculate().compress();
+
+        let mut mv_B = MulVec::new();
+        mv_B.add_scalar(&rcs);
+        mv_B.add_scalar(&eta);
+        mv_B.add_point(&pk.g);
+        mv_B.add_point(&pk.h);
+        let B = mv_B.calculate().compress();
+
         // get challenge e
         transcript.append_point(b"A", &A);
         transcript.append_point(b"B", &B);
         let e = transcript.challenge_scalar(b"e");
+
         // compute r_prime, s_prime, delta_prime
         let r_prime = r + a[0] * e;
         let s_prime = s + b[0] * e;
         let d_prime = eta + delta * e + alpha * e * e;
+
         WeightedInnerProductProof {
             L_vec: L_vec,
             R_vec: R_vec,
@@ -179,6 +228,7 @@ impl WeightedInnerProductProof {
             d_prime: d_prime,
         }
     }
+
     /**
      * To represent all verification process in one
      * multi-exponentiation, this function gets exponents
