@@ -19,18 +19,17 @@ impl MulVec {
     }
   }
 
-  fn mulvec(
+  pub fn calculate(
+    &self,
     curve: &Rc<Secp256k1>,
-    scalars: &Vec<PrimeFieldElem>,
-    points: &Vec<AffinePoint>,
   ) -> AffinePoint {
-    if scalars.len() != points.len() {
+    if self.scalars.len() != self.points.len() {
       panic!("mulvec: lengths of scalars and points must match");
     }
     let mut sum = curve.g().zero();
 
-    for i in 0..scalars.len() {
-      let p = &points[i] * &scalars[i];
+    for i in 0..self.scalars.len() {
+      let p = &self.points[i] * &self.scalars[i];
       sum = &sum + &p;
     }
     return sum;
@@ -54,9 +53,5 @@ impl MulVec {
     for point in points {
       self.points.push(point.clone());
     }
-  }
-
-  pub fn calculate(&self, curve: &Rc<Secp256k1>) -> AffinePoint {
-    Self::mulvec(curve, &self.scalars, &self.points)
   }
 }

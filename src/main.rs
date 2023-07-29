@@ -3,9 +3,26 @@ use bulletproofsplus::PublicKey;
 use bulletproofsplus::range::{RangeProof, RangeProver};
 use bulletproofsplus::secp256k1::building_block::secp256k1::secp256k1::Secp256k1;
 use std::rc::Rc;
+use mcl_rust::*;
 
 fn main() {
     println!("started");
+
+    println!("mcl version={:04x}", get_version());
+    let b = init(CurveType::BLS12_381);
+    if !b {
+        println!("init err");
+    }
+    let mut x = Fr::zero();
+    println!("x={}", x.get_str(10));
+    x.set_int(123456);
+    println!("x={}", x.get_str(10));
+    x.set_int(0xfff);
+    println!("x={}", x.get_str(16));
+    x.clear();
+    println!("x={}", x.get_str(10));
+    x.set_str("0x123", 0);
+    println!("x={}", x.get_str(16));
 
     let n = 8;
     let m = 1;

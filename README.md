@@ -55,3 +55,17 @@ fn main() {
     assert_eq!(result, Ok(()));
 }
 ```
+
+
+### mcl-rust
+1. Clone mcl-rust in the repository root dir
+
+```
+git clone --recursive https://github.com/herumi/mcl-rust.git
+```
+
+2. Then add below to the end of main function in `./mcl-rust/build.rs`
+
+```
+println!("cargo:rustc-link-search=native=./mcl-rust/build/lib");
+```

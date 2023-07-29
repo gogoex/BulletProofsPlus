@@ -270,18 +270,20 @@ impl WeightedInnerProductProof {
             .zip(G_exp_of_commitment.iter())
             .zip(util::exp_iter_type2(&y.inv()))
             .map(|((s_vec_i, g_exp_of_comm_i), power_of_y_vec_inv_i)| {
-                s_vec_i.negate() * power_of_y_vec_inv_i * r_prime_e_y + g_exp_of_comm_i * e_sqr
+                -s_vec_i * power_of_y_vec_inv_i * r_prime_e_y + g_exp_of_comm_i * e_sqr
             })
             .collect();
 
         let H_exp: Vec<PrimeFieldElem> = s_prime_vec.zip(H_exp_of_commitment.iter()).map(
             |(s_prime_vec_i, h_exp_of_comm_i)| {
-                s_prime_vec_i.negate() * s_prime_e + h_exp_of_comm_i * e_sqr
+                -s_prime_vec_i * s_prime_e + h_exp_of_comm_i * e_sqr
             },
         ).collect();
 
-        let g_exp = &self.r_prime.negate() * y * &self.s_prime + g_exp_of_commitment * e_sqr;
-        let h_exp = &self.d_prime.negate();
+        let g_exp = &-self.r_prime.clone() * y * &self.s_prime + g_exp_of_commitment * e_sqr;
+
+        let h_exp = &-self.d_prime.clone();
+
         let V_exp: Vec<PrimeFieldElem> = V_exp_of_commitment
             .iter()
             .map(|V_exp_of_commitment_i| V_exp_of_commitment_i * e_sqr)

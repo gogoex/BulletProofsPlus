@@ -101,11 +101,6 @@ impl RangeProof {
         assert_eq!(pk.G_vec.len(), n);
         assert_eq!(pk.H_vec.len(), n);
 
-        let bp = curve.g();
-        let neg_bp = bp.inv();
-        let bp_sum = bp + neg_bp;
-        println!("-----> is identity {}", bp_sum.is_zero());
-
         // random alpha
         let alpha = &curve.f_n.elem(&7u8);
 
@@ -137,7 +132,7 @@ impl RangeProof {
             G_vec_sum = G_vec_sum + p;
         }
 
-        let G_vec_sum_exp = z.negate();
+        let G_vec_sum_exp = -z;
         let H_exp: Vec<PrimeFieldElem> = power_of_two
             .iter()
             .zip(power_of_y_rev)
@@ -150,8 +145,8 @@ impl RangeProof {
         for x in &power_of_y {
             g_exp = g_exp + x;
         }
-        g_exp = g_exp * (z + (z * z).negate());
-        g_exp = g_exp + ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z).negate();
+        g_exp = g_exp * (z - (z * z));
+        g_exp = g_exp - ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z);
 
         let mut mv = MulVec::new();
         mv.add_scalar(&curve.f_n.elem(&1u8));
@@ -169,8 +164,8 @@ impl RangeProof {
         let A_hat = mv.calculate(&curve);
 
         // compute a_vec, b_vec, alpha_hat
-        let nz = z.negate();
-        let one_minus_z = one + z.negate();
+        let nz = -z;
+        let one_minus_z = one - z;
 
         let a_vec: Vec<PrimeFieldElem> = v_bits
             .iter()
@@ -181,7 +176,7 @@ impl RangeProof {
             .iter()
             .zip(v_bits.iter())
             .map(|(H_exp_i, v_bits_i)| {
-                if *v_bits_i == 0 { (H_exp_i + one.negate()).clone() } else { H_exp_i.clone() }
+                if *v_bits_i == 0 { (H_exp_i - one).clone() } else { H_exp_i.clone() }
             })
             .collect();
 
@@ -222,13 +217,13 @@ impl RangeProof {
 
         // compute exponent of A_hat
         let one = &curve.f_n.elem(&1u8);
-        let two = &curve.f_n.elem(&2u64);
+        let two = &curve.f_n.elem(&2u8);
 
-        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f_n.elem(&2u64)).take(n).collect();
+        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&curve.f_n.elem(&2u8)).take(n).collect();
         let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(y).take(n).collect();
         let power_of_y_rev = power_of_y.iter().rev();
 
-        let G_exp: Vec<PrimeFieldElem> = vec![z.negate(); n];
+        let G_exp: Vec<PrimeFieldElem> = vec![-z; n];
         let H_exp: Vec<PrimeFieldElem> = power_of_two
             .iter()
             .zip(power_of_y_rev)
@@ -240,8 +235,8 @@ impl RangeProof {
         for x in &power_of_y {
             g_exp = g_exp + x;
         }
-        g_exp = g_exp * (z + (z * z).negate());
-        g_exp = g_exp + ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z).negate();
+        g_exp = g_exp * (z - (z * z));
+        g_exp = g_exp - ((util::scalar_exp_vartime(&two, n as u64) - one) * &V_exp * z);
 
         self.proof.verify(
             curve,
@@ -309,7 +304,7 @@ impl RangeProof {
             .collect();
 
         // compute A_hat
-        let G_vec_sum_exp = &z.negate();
+        let G_vec_sum_exp = &-z;
 
         let H_exp: Vec<PrimeFieldElem> = d
             .iter()
@@ -359,7 +354,7 @@ impl RangeProof {
 
         // compute a_vec, b_vec, alpha_hat
         let one = &curve.f_n.elem(&1u8);
-        let nz = &z.negate();
+        let nz = &-z;
         let one_minus_z = &(one - z);
 
         let a_vec: Vec<PrimeFieldElem> = v_bits
@@ -421,7 +416,7 @@ impl RangeProof {
         // 1. Recompute y and z
         let y = &curve.f_n.elem(&12u8);
         let z = &curve.f_n.elem(&23u8);
-        let minus_z = &z.negate();
+        let minus_z = &-z;
         let z_sqr = &(z * z);
 
         // 2. Compute power of two, power of y, power of z
