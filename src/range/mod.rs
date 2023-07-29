@@ -151,7 +151,11 @@ impl RangeProof {
 
         let V_exp = util::scalar_exp_vartime(&y, (n + 1) as u64);
 
-        let mut g_exp: Scalar = power_of_y.iter().sum();
+        let mut g_exp = Scalar::zero();
+        for x in &power_of_y {
+            g_exp = g_exp + x;
+        }
+
         g_exp *= z - z * z;
         g_exp -= (util::scalar_exp_vartime(&two, n as u64) - one) * V_exp * z;
 
