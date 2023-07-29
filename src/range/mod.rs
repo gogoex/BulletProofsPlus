@@ -315,6 +315,7 @@ impl RangeProof {
             proof: proof,
         }
     }
+
     fn verify_single(
         &self,
         transcript: &mut Transcript,
@@ -322,10 +323,13 @@ impl RangeProof {
         n: usize,
         commitment: &CompressedRistretto,
     ) -> Result<(), ProofError> {
+        println!("in verify_single");
+
         // get challenges
         transcript.validate_and_append_point(b"A", &self.A)?;
         let y = transcript.challenge_scalar(b"y");
         let z = transcript.challenge_scalar(b"z");
+
         // decompress A
         let As = match self.A.decompress() {
             Some(point) => point,
@@ -335,12 +339,15 @@ impl RangeProof {
             Some(point) => point,
             None => panic!("fail to decompress"),
         };
+
         // compute exponent of A_hat
         let one = Scalar::one();
         let two = Scalar::from(2u64);
+
         let power_of_two: Vec<Scalar> = util::exp_iter_type1(Scalar::from(2u64)).take(n).collect();
         let power_of_y: Vec<Scalar> = util::exp_iter_type2(y).take(n).collect();
         let power_of_y_rev = power_of_y.iter().rev();
+
         let G_exp: Vec<Scalar> = vec![-z; n];
         let H_exp: Vec<Scalar> = power_of_two
             .iter()
@@ -348,9 +355,16 @@ impl RangeProof {
             .map(|(power_of_two_i, power_of_y_rev_i)| power_of_two_i * power_of_y_rev_i + z)
             .collect();
         let V_exp = util::scalar_exp_vartime(&y, (n + 1) as u64);
-        let mut g_exp: Scalar = power_of_y.iter().sum();
+
+        //let mut g_exp: Scalar = power_of_y.iter().sum();
+        let mut g_exp = Scalar::from(0u32);
+        for x in &power_of_y {
+            g_exp = g_exp + x;
+        }
+
         g_exp *= z - z * z;
         g_exp -= (util::scalar_exp_vartime(&two, n as u64) - one) * V_exp * z;
+
         self.proof.verify(
             transcript,
             &pk,
@@ -363,6 +377,7 @@ impl RangeProof {
             &[Vs]
         )
     }
+
     fn verify_multiple(
         &self,
         transcript: &mut Transcript,
