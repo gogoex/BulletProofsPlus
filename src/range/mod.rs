@@ -101,6 +101,11 @@ impl RangeProof {
         assert_eq!(pk.G_vec.len(), n);
         assert_eq!(pk.H_vec.len(), n);
 
+        let bp = curve.g();
+        let neg_bp = bp.inv();
+        let bp_sum = bp + neg_bp;
+        println!("-----> is identity {}", bp_sum.is_zero());
+
         // random alpha
         let alpha = &curve.f_n.elem(&7u8);
 

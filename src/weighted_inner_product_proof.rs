@@ -79,6 +79,7 @@ impl WeightedInnerProductProof {
         // n > 1 case
         while n != 1 {
             n = n / 2;
+
             // split a, b, c, G, H vector
             let (a1, a2) = a.split_at_mut(n);
             let (b1, b2) = b.split_at_mut(n);
