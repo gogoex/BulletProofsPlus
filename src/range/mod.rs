@@ -141,7 +141,7 @@ impl RangeProof {
 
         let V_exp = util::scalar_exp_vartime(&y, (n + 1) as u64);
 
-        let mut g_exp = curve.f.elem(&0u8);
+        let mut g_exp = curve.f_n.elem(&0u8);
         for x in &power_of_y {
             g_exp = g_exp + x;
         }
@@ -164,8 +164,9 @@ impl RangeProof {
         let A_hat = mv.calculate(&curve);
 
         // compute a_vec, b_vec, alpha_hat
-        let nz = -z;
-        let one_minus_z = one - z;
+        let nz = z.negate();
+        let one_minus_z = one + z.negate();
+
         let a_vec: Vec<PrimeFieldElem> = v_bits
             .iter()
             .map(|v_bits_i| if *v_bits_i == 0 { nz.clone() } else { one_minus_z.clone() })
