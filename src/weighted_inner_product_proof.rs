@@ -251,62 +251,80 @@ impl WeightedInnerProductProof {
         V: &[RistrettoPoint],
     ) -> Result<(), ProofError> {
         use curve25519_dalek::traits::IsIdentity;
+
         let logn = self.L_vec.len();
         let n = (1 << logn) as usize;
         let y = power_of_y_vec[0];
+
         let (challenges_sqr, challenges_inv_sqr, s_vec, e)
             = self.verification_scalars(n, power_of_y_vec, transcript)?;
+
         let s_prime_vec = s_vec.iter().rev();
         let e_sqr = e * e;
         let r_prime_e_y = self.r_prime * e * y;
         let s_prime_e = self.s_prime * e;
+
         // compute RHS / LHS
         let Ls_exp = challenges_sqr
             .iter()
-            .map(|challenges_sqr_i| challenges_sqr_i * e_sqr);
+            .map(|challenges_sqr_i| challenges_sqr_i * e_sqr)
+            .collect();
+
         let Rs_exp = challenges_inv_sqr
             .iter()
-            .map(|challenges_inv_sqr_i| challenges_inv_sqr_i * e_sqr);
+            .map(|challenges_inv_sqr_i| challenges_inv_sqr_i * e_sqr)
+            .collect();
+
         let G_exp = s_vec
             .iter()
             .zip(G_exp_of_commitment.iter())
             .zip(util::exp_iter_type2(y.invert()))
             .map(|((s_vec_i, g_exp_of_comm_i), power_of_y_vec_inv_i)| {
                 -s_vec_i * power_of_y_vec_inv_i * r_prime_e_y + g_exp_of_comm_i * e_sqr
-            });
+            })
+            .collect();
+
         let H_exp = s_prime_vec.zip(H_exp_of_commitment.iter()).map(
             |(s_prime_vec_i, h_exp_of_comm_i)| {
                 -s_prime_vec_i * s_prime_e + h_exp_of_comm_i * e_sqr
             },
-        );
+        ).collect();
+
         let g_exp = -self.r_prime * y * self.s_prime + *g_exp_of_commitment * e_sqr;
         let h_exp = -self.d_prime;
         let V_exp = V_exp_of_commitment
             .iter()
-            .map(|V_exp_of_commitment_i| V_exp_of_commitment_i * e_sqr);
-        let expected = RistrettoPoint::optional_multiscalar_mul(
-            iter::once(Scalar::one())
-                .chain(iter::once(e))
-                .chain(iter::once(e_sqr))
-                .chain(iter::once(g_exp))
-                .chain(iter::once(h_exp))
-                .chain(Ls_exp)
-                .chain(Rs_exp)
-                .chain(G_exp)
-                .chain(H_exp)
-                .chain(V_exp),
-            iter::once(self.B.decompress())
-                .chain(iter::once(self.A.decompress()))
-                .chain(iter::once(Some(A_prime)))
-                .chain(iter::once(Some(pk.g)))
-                .chain(iter::once(Some(pk.h)))
-                .chain(self.L_vec.iter().map(|L| L.decompress()))
-                .chain(self.R_vec.iter().map(|R| R.decompress()))
-                .chain(pk.G_vec.iter().map(|&x| Some(x)))
-                .chain(pk.H_vec.iter().map(|&x| Some(x)))
-                .chain(V.iter().map(|&v| Some(v))),
-        )
-        .ok_or_else(|| ProofError::VerificationError)?;
+            .map(|V_exp_of_commitment_i| V_exp_of_commitment_i * e_sqr)
+            .collect();
+
+        let mut mv = MulVec::new();
+        mv.add_scalar(&Scalar::one());
+        mv.add_scalar(&e);
+        mv.add_scalar(&e_sqr);
+        mv.add_scalar(&g_exp);
+        mv.add_scalar(&h_exp);
+        mv.add_scalars(&Ls_exp);
+        mv.add_scalars(&Rs_exp);
+        mv.add_scalars(&G_exp);
+        mv.add_scalars(&H_exp);
+        mv.add_scalars(&V_exp);
+
+        let L_vec2 = self.L_vec.iter().map(|x| x.decompress().unwrap()).collect();
+        let R_vec2 = self.R_vec.iter().map(|x| x.decompress().unwrap()).collect();
+
+        mv.add_point(&self.B.decompress().unwrap());
+        mv.add_point(&self.A.decompress().unwrap());
+        mv.add_point(&A_prime);
+        mv.add_point(&pk.g);
+        mv.add_point(&pk.h);
+        mv.add_points(&L_vec2);
+        mv.add_points(&R_vec2);
+        mv.add_points(&pk.G_vec);
+        mv.add_points(&pk.H_vec);
+        mv.add_points(&V.to_vec());
+
+        let expected = mv.calculate();
+
         // check LSH == RHS
         if expected.is_identity() {
             Ok(())
