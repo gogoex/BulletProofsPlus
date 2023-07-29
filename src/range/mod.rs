@@ -106,16 +106,16 @@ impl RangeProof {
         let alpha = Scalar::random(&mut thread_rng());
 
         // compute A
-        use subtle::{Choice, ConditionallySelectable};
-        let mut v_bits: Vec<Choice> = Vec::with_capacity(n);
+        //use subtle::{Choice, ConditionallySelectable};
+        let mut v_bits: Vec<u8> = Vec::with_capacity(n);
         let mut A = pk.h * alpha;
         let mut i = 0;
         for (G_i, H_i) in pk.G_vec.iter().zip(pk.H_vec.iter()) {
-            v_bits.push(Choice::from(((v >> i) & 1) as u8));
+            v_bits.push(((v >> i) & 1) as u8);
             let mut point = -H_i;
-            point.conditional_assign(G_i, v_bits[i]);
-            A += point;
-            i += 1;
+            if v_bits[i] != 0 { point = G_i.clone(); }
+            A = A + point;
+            i = i + 1;
         }
 
         // get challenges
@@ -165,16 +165,17 @@ impl RangeProof {
         let one_minus_z = one - z;
         let a_vec: Vec<Scalar> = v_bits
             .iter()
-            .map(|v_bits_i| Scalar::conditional_select(&nz, &one_minus_z, *v_bits_i))
+            .map(|v_bits_i| if *v_bits_i == 0 { nz.clone() } else { one_minus_z.clone() })
             .collect();
         let b_vec: Vec<Scalar> = H_exp
             .iter()
             .zip(v_bits.iter())
             .map(|(H_exp_i, v_bits_i)| {
-                Scalar::conditional_select(&(H_exp_i - one), H_exp_i, *v_bits_i)
+                if *v_bits_i == 0 { (H_exp_i - one).clone() } else { H_exp_i.clone() }
             })
             .collect();
         let alpha_hat = alpha + gamma * V_exp;
+
         // generate weighted inner product proof
         let proof = WeightedInnerProductProof::prove(
             transcript,
