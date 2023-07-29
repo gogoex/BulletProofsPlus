@@ -99,6 +99,8 @@ impl RangeProof {
         gamma: &Scalar,
         commitment: &CompressedRistretto,
     ) -> RangeProof {
+        println!("in prove_single");
+
         // check parameter
         assert_eq!(pk.G_vec.len(), n);
         assert_eq!(pk.H_vec.len(), n);
