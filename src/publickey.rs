@@ -24,14 +24,19 @@ impl PublicKey {
     //
     pub fn new(length: usize) -> Self {
         let mut csprng = OsRng;
+
         let g = RistrettoPoint::random(&mut csprng);
         let h = RistrettoPoint::random(&mut csprng);
+
         let G_vec: Vec<RistrettoPoint> = (0..length)
             .map(|_| RistrettoPoint::random(&mut csprng))
             .collect();
+
         let H_vec: Vec<RistrettoPoint> = (0..length)
             .map(|_| RistrettoPoint::random(&mut csprng))
             .collect();
+
+println!("G_vec.len={}", G_vec.len());
         PublicKey {
             g: g,
             h: h,

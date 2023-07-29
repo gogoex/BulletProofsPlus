@@ -63,6 +63,7 @@ impl RangeProof {
             )
         }
     }
+
     pub fn verify(
         &self,
         transcript: &mut Transcript,
@@ -100,8 +101,10 @@ impl RangeProof {
         // check parameter
         assert_eq!(pk.G_vec.len(), n);
         assert_eq!(pk.H_vec.len(), n);
+
         // random alpha
         let alpha = Scalar::random(&mut thread_rng());
+
         // compute A
         use subtle::{Choice, ConditionallySelectable};
         let mut v_bits: Vec<Choice> = Vec::with_capacity(n);
@@ -114,10 +117,12 @@ impl RangeProof {
             A += point;
             i += 1;
         }
+
         // get challenges
         transcript.append_point(b"A", &(A.compress()));
         let y = transcript.challenge_scalar(b"y");
         let z = transcript.challenge_scalar(b"z");
+
         // compute A_hat
         let one = Scalar::one();
         let two = Scalar::from(2u64);
@@ -138,7 +143,7 @@ impl RangeProof {
         let mut g_exp: Scalar = power_of_y.iter().sum();
         g_exp *= z - z * z;
         g_exp -= (util::scalar_exp_vartime(&two, n as u64) - one) * V_exp * z;
-        
+
         let A_hat = match RistrettoPoint::optional_multiscalar_mul(
             iter::once(Scalar::one())
                 .chain(iter::once(G_vec_sum_exp))

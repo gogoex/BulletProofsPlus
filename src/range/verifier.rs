@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
+use curve25519_dalek::ristretto::CompressedRistretto;
 
 pub struct RangeVerifier {
     pub commitment_vec: Vec<CompressedRistretto>,
