@@ -3,17 +3,15 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use std::rc::Rc;
 use crate::{
     util,
     errors::ProofError,
     publickey::PublicKey,
-    secp256k1::building_block::{
-        field::prime_field_elem::PrimeFieldElem,
-        secp256k1::affine_point::AffinePoint,
-        secp256k1::secp256k1::Secp256k1,
-        secp256k1::util::MulVec,
-        zero::Zero,
+    bls12_381::building_block::{
+        point::point::Point,
+        scalar::prime_field_elem::PrimeFieldElem,
+        mulvec::MulVec,
+        zero::Zero2,
     },
 };
 
@@ -25,10 +23,10 @@ use crate::{
  */
 #[derive(Clone, Debug)]
 pub struct WeightedInnerProductProof {
-    pub L_vec: Vec<AffinePoint>,
-    pub R_vec: Vec<AffinePoint>,
-    pub A: AffinePoint,
-    pub B: AffinePoint,
+    pub L_vec: Vec<Point>,
+    pub R_vec: Vec<Point>,
+    pub A: Point,
+    pub B: Point,
     pub r_prime: PrimeFieldElem,
     pub s_prime: PrimeFieldElem,
     pub d_prime: PrimeFieldElem,
@@ -36,13 +34,12 @@ pub struct WeightedInnerProductProof {
 
 impl WeightedInnerProductProof {
     pub fn prove(
-        curve: Rc<Secp256k1>,
         pk: &PublicKey,
         a_vec: &Vec<PrimeFieldElem>,
         b_vec: &Vec<PrimeFieldElem>,
         power_of_y_vec: &Vec<PrimeFieldElem>,
         gamma: PrimeFieldElem,
-        commitment: AffinePoint,
+        commitment: Point,
     ) -> Self {
         // create slices G, H, a, b, c
         let mut G = &mut pk.G_vec.clone()[..];
@@ -73,8 +70,8 @@ impl WeightedInnerProductProof {
 
         // allocate memory for L_vec and R_vec
         let logn = n.next_power_of_two().trailing_zeros() as usize;
-        let mut L_vec: Vec<AffinePoint> = Vec::with_capacity(logn);
-        let mut R_vec: Vec<AffinePoint> = Vec::with_capacity(logn);
+        let mut L_vec: Vec<Point> = Vec::with_capacity(logn);
+        let mut R_vec: Vec<Point> = Vec::with_capacity(logn);
 
         // n > 1 case
         while n != 1 {
@@ -88,12 +85,12 @@ impl WeightedInnerProductProof {
             let (H1, H2) = H.split_at_mut(n);
 
             // compute c_L and c_R
-            let c_L = util::weighted_inner_product(&curve, &a1, &b2, &power_of_y1);
-            let c_R = util::weighted_inner_product(&curve, &a2, &b1, &power_of_y2);
+            let c_L = util::weighted_inner_product(&a1, &b2, &power_of_y1);
+            let c_R = util::weighted_inner_product(&a2, &b1, &power_of_y2);
 
             // random d_L and d_R by prover
-            let d_L = curve.f_n.elem(&4u8);
-            let d_R = curve.f_n.elem(&5u8);
+            let d_L = PrimeFieldElem::new(4);
+            let d_R = PrimeFieldElem::new(5);
 
             // compute L and R
             let y_nhat = &power_of_y1[n - 1];
@@ -111,7 +108,7 @@ impl WeightedInnerProductProof {
             mv_g2.add_points(&H1.to_vec());
             mv_g2.add_point(&pk.g);
             mv_g2.add_point(&pk.h);
-            let L = mv_g2.calculate(&curve);
+            let L = mv_g2.calculate();
 
             let mut mv_g1 = MulVec::new();
             mv_g1.add_scalars(&G1_exp);
@@ -123,13 +120,13 @@ impl WeightedInnerProductProof {
             mv_g1.add_points(&H2.to_vec());
             mv_g1.add_point(&pk.g);
             mv_g1.add_point(&pk.h);
-            let R = mv_g1.calculate(&curve);
+            let R = mv_g1.calculate();
 
             L_vec.push(L.clone());
             R_vec.push(R.clone());
 
             // get challenge e
-            let e = curve.f_n.elem(&7u8);
+            let e = PrimeFieldElem::new(7);
             let e_inv = e.inv();
             let e_sqr = &e * &e;
             let e_sqr_inv = &e_inv * &e_inv;
@@ -140,8 +137,7 @@ impl WeightedInnerProductProof {
             mv1.add_scalar(&e_sqr_inv);
             mv1.add_point(&L);
             mv1.add_point(&R);
-            mv1.calculate(&curve);
-            P = P + mv1.calculate(&curve);
+            P = P + mv1.calculate();
 
             let y_nhat_e_inv = y_nhat * &e_inv;
             let y_nhat_inv_e = &y_nhat_inv * &e;
@@ -155,14 +151,14 @@ impl WeightedInnerProductProof {
                 mv_g.add_scalar(&y_nhat_inv_e);
                 mv_g.add_point(&G1[i]);
                 mv_g.add_point(&G2[i]);
-                G1[i] = mv_g.calculate(&curve);
+                G1[i] = mv_g.calculate();
 
                 let mut mv_h = MulVec::new();
                 mv_h.add_scalar(&e);
                 mv_h.add_scalar(&e_inv);
                 mv_h.add_point(&H1[i]);
                 mv_h.add_point(&H2[i]);
-                H1[i] = mv_h.calculate(&curve);
+                H1[i] = mv_h.calculate();
             }
 
             a = a1;
@@ -174,10 +170,10 @@ impl WeightedInnerProductProof {
         }
 
         // random r, s, delta, eta
-        let r = curve.f_n.elem(&33u8);
-        let s = curve.f_n.elem(&44u8);
-        let delta = curve.f_n.elem(&88u8);
-        let eta = curve.f_n.elem(&123u8);
+        let r = PrimeFieldElem::new(33);
+        let s = PrimeFieldElem::new(44);
+        let delta = PrimeFieldElem::new(88);
+        let eta = PrimeFieldElem::new(123);
 
         // compute A and B
         let rcbsca = &r * &power_of_y[0] * &b[0] + &s * &power_of_y[0] * &a[0];
@@ -192,17 +188,17 @@ impl WeightedInnerProductProof {
         mv_A.add_point(&H[0]);
         mv_A.add_point(&pk.g);
         mv_A.add_point(&pk.h);
-        let A = mv_A.calculate(&curve);
+        let A = mv_A.calculate();
 
         let mut mv_B = MulVec::new();
         mv_B.add_scalar(&rcs);
         mv_B.add_scalar(&eta);
         mv_B.add_point(&pk.g);
         mv_B.add_point(&pk.h);
-        let B = mv_B.calculate(&curve);
+        let B = mv_B.calculate();
 
         // get challenge e
-        let e = curve.f_n.elem(&99u8);
+        let e = PrimeFieldElem::new(99);
 
         // compute r_prime, s_prime, delta_prime
         let r_prime = &r + &a[0] * &e;
@@ -231,15 +227,14 @@ impl WeightedInnerProductProof {
      */
     pub fn verify(
         &self,
-        curve: Rc<Secp256k1>,
         pk: &PublicKey,
         power_of_y_vec: &Vec<PrimeFieldElem>,
         G_exp_of_commitment: &[PrimeFieldElem],
         H_exp_of_commitment: &[PrimeFieldElem],
         g_exp_of_commitment: &PrimeFieldElem,
         V_exp_of_commitment: &[PrimeFieldElem],
-        A_prime: AffinePoint,
-        V: &[AffinePoint],
+        A_prime: Point,
+        V: &[Point],
     ) -> Result<(), ProofError> {
 
         let logn = self.L_vec.len();
@@ -247,7 +242,7 @@ impl WeightedInnerProductProof {
         let y = &power_of_y_vec[0];
 
         let (challenges_sqr, challenges_inv_sqr, s_vec, e)
-            = self.verification_scalars(&curve, n)?;
+            = self.verification_scalars(n)?;
 
         let s_prime_vec = s_vec.iter().rev();
         let e_sqr = &(&e * &e);
@@ -290,7 +285,7 @@ impl WeightedInnerProductProof {
             .collect();
 
         let mut mv = MulVec::new();
-        mv.add_scalar(&curve.f_n.elem(&1u8));
+        mv.add_scalar(&PrimeFieldElem::new(1));
         mv.add_scalar(&e);
         mv.add_scalar(&e_sqr);
         mv.add_scalar(&g_exp);
@@ -312,7 +307,7 @@ impl WeightedInnerProductProof {
         mv.add_points(&pk.H_vec);
         mv.add_points(&V.to_vec());
 
-        let expected = mv.calculate(&curve);
+        let expected = mv.calculate();
 
         // check LSH == RHS
         if expected.is_zero() {
@@ -324,7 +319,6 @@ impl WeightedInnerProductProof {
 
     pub fn verification_scalars(
         &self,
-        curve: &Rc<Secp256k1>,
         n: usize,
     ) -> Result<(Vec<PrimeFieldElem>, Vec<PrimeFieldElem>, Vec<PrimeFieldElem>, PrimeFieldElem), ProofError> {
         let logn = self.L_vec.len();
@@ -346,7 +340,7 @@ impl WeightedInnerProductProof {
         // 1. Recompute e_1, e_2, ..., e_k based on the proof transcript
         let mut challenges = Vec::with_capacity(logn);
         for _i in 0..self.L_vec.len() {
-            challenges.push(curve.f_n.elem(&7u8));
+            challenges.push(PrimeFieldElem::new(7));
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
@@ -362,7 +356,7 @@ impl WeightedInnerProductProof {
         let challenges_inv_sqr = challenges_inv;
 
         // 4. Recompute e
-        let e = curve.f_n.elem(&99u8);
+        let e = PrimeFieldElem::new(99);
 
         // 5. Compute s_vec and s_prime_vec
         let mut s_vec = Vec::with_capacity(n);

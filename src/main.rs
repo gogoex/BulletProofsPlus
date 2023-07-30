@@ -1,43 +1,23 @@
-use bulletproofsplus::PublicKey;
+use bulletproofsplus::{PublicKey, bls12_381::building_block::scalar::prime_field_elem::PrimeFieldElem};
 #[allow(unused_imports)]
 use bulletproofsplus::range::{RangeProof, RangeProver};
-use bulletproofsplus::secp256k1::building_block::secp256k1::secp256k1::Secp256k1;
-use std::rc::Rc;
-use mcl_rust::*;
+use bulletproofsplus::bls12_381::building_block::arith::Arith;
 
 fn main() {
     println!("started");
-
-    println!("mcl version={:04x}", get_version());
-    let b = init(CurveType::BLS12_381);
-    if !b {
-        println!("init err");
-    }
-    let mut x = Fr::zero();
-    println!("x={}", x.get_str(10));
-    x.set_int(123456);
-    println!("x={}", x.get_str(10));
-    x.set_int(0xfff);
-    println!("x={}", x.get_str(16));
-    x.clear();
-    println!("x={}", x.get_str(10));
-    x.set_str("0x123", 0);
-    println!("x={}", x.get_str(16));
+    Arith::init();
 
     let n = 8;
     let m = 1;
 
-    let curve = Rc::new(Secp256k1::new());
-    println!("created secp256k1 curve");
-
     // setup generators
-    let pk = PublicKey::new(&curve, n * m);
+    let pk = PublicKey::new(n * m);
     println!("created public key");
 
     // create m commitmentments and add to prover
-    let mut prover = RangeProver::new(curve.clone());
+    let mut prover = RangeProver::new();
     let v1 = 2u64;
-    let gamma1 = curve.f_n.elem(&3u8);
+    let gamma1 = PrimeFieldElem::new(3);
     prover.commit(&pk, v1, gamma1);
 
     // let v2 = 5u64;
@@ -47,7 +27,6 @@ fn main() {
     // build proof
     println!("started proving...");
     let proof: RangeProof = RangeProof::prove(
-        curve.clone(),
         &pk,
         n,
         &prover,
@@ -59,7 +38,6 @@ fn main() {
     // verify proof
     println!("started verifying...");
     let result = proof.verify(
-        curve.clone(),
         &pk,
         n,
         &commitment_vec,

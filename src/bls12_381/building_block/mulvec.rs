@@ -1,14 +1,12 @@
-use crate::secp256k1::building_block::{
-  field::prime_field_elem::PrimeFieldElem,
-  secp256k1::affine_point::AffinePoint,
-  secp256k1::secp256k1::Secp256k1,
-  zero::Zero,
+use crate::bls12_381::building_block::{
+  scalar::prime_field_elem::PrimeFieldElem,
+  point::point::Point,
+  zero::Zero2,
 };
-use std::rc::Rc;
 
 pub struct MulVec {
   scalars: Vec<PrimeFieldElem>,
-  points: Vec<AffinePoint>,
+  points: Vec<Point>,
 }
 
 impl MulVec {
@@ -21,12 +19,11 @@ impl MulVec {
 
   pub fn calculate(
     &self,
-    curve: &Rc<Secp256k1>,
-  ) -> AffinePoint {
+  ) -> Point {
     if self.scalars.len() != self.points.len() {
       panic!("mulvec: lengths of scalars and points must match");
     }
-    let mut sum = curve.g().zero();
+    let mut sum = Point::zero();
 
     for i in 0..self.scalars.len() {
       let p = &self.points[i] * &self.scalars[i];
@@ -45,11 +42,11 @@ impl MulVec {
     }
   }
 
-  pub fn add_point(&mut self, point: &AffinePoint) {
+  pub fn add_point(&mut self, point: &Point) {
     self.points.push(point.clone());
   }
 
-  pub fn add_points(&mut self, points: &Vec<AffinePoint>) {
+  pub fn add_points(&mut self, points: &Vec<Point>) {
     for point in points {
       self.points.push(point.clone());
     }

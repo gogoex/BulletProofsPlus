@@ -2,54 +2,50 @@
 
 extern crate alloc;
 
-use crate::secp256k1::building_block::{
-    field::prime_field_elem::PrimeFieldElem,
-    secp256k1::{
-        affine_point::AffinePoint,
-        secp256k1::Secp256k1,
-    },
+use crate::bls12_381::building_block::{
+    scalar::prime_field_elem::PrimeFieldElem,
+    point::point::Point,
 };
-use std::rc::Rc;
 
 /**
  * Publickey
  */
 pub struct PublicKey {
-    pub g: AffinePoint,
-    pub h: AffinePoint,
-    pub G_vec: Vec<AffinePoint>,
-    pub H_vec: Vec<AffinePoint>,
+    pub g: Point,
+    pub h: Point,
+    pub G_vec: Vec<Point>,
+    pub H_vec: Vec<Point>,
 }
 
 impl PublicKey {
-    pub fn new(curve: &Rc<Secp256k1>, length: usize) -> Self {
+    pub fn new(length: usize) -> Self {
         // g = 1g
-        let g = curve.g();
-        let h = curve.g() * curve.f_n.elem(&2u8);
+        let g = &Point::base_point();
+        let h = g * PrimeFieldElem::new(2);
 
         // G = 3g, 6g, 9g, ...
-        let mut G_vec: Vec<AffinePoint> = vec![];
+        let mut G_vec: Vec<Point> = vec![];
         for i in 0..length {
-            let p = curve.g() * curve.f_n.elem(&((i + 1) * 3));
+            let p = g * PrimeFieldElem::new((i as i32 + 1) * 3);
             G_vec.push(p);
         }
 
         // H = 5g, 10g, 15g, ...
-        let mut H_vec: Vec<AffinePoint> = vec![];
+        let mut H_vec: Vec<Point> = vec![];
         for i in 0..length {
-            let p = curve.g() * curve.f_n.elem(&((i + 1) * 3));
+            let p = g * PrimeFieldElem::new((i as i32 + 1) * 3);
             H_vec.push(p);
         }
         println!("G_vec.len={}", G_vec.len());
         PublicKey {
-            g: g,
-            h: h,
+            g: g.clone(),
+            h: h.clone(),
             G_vec: G_vec,
             H_vec: H_vec,
         }
     }
 
-    pub fn commitment(&self, v: &PrimeFieldElem, gamma: &PrimeFieldElem) -> AffinePoint {
+    pub fn commitment(&self, v: &PrimeFieldElem, gamma: &PrimeFieldElem) -> Point {
         &self.g * v + &self.h * gamma
     }
 }

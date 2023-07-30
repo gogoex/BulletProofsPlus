@@ -1,8 +1,5 @@
 use mcl_rust::*;
-use crate::bls12_381::building_block::{
-  zero::Zero,
-  arith::Arith,
-};
+use crate::bls12_381::building_block::zero::Zero2;
 use std::{
   fmt,
   ops::{Add, Sub, Mul, Div, Neg, Deref},
@@ -23,8 +20,8 @@ impl fmt::Debug for PrimeFieldElem {
   }
 }
 
-impl Zero<PrimeFieldElem> for PrimeFieldElem {
-  fn zero(&self) -> Self {
+impl Zero2<PrimeFieldElem> for PrimeFieldElem {
+  fn zero() -> Self {
     PrimeFieldElem {
       e: Fr::zero(),
     }
@@ -162,8 +159,11 @@ impl Neg for PrimeFieldElem {
   type Output = Self;
 
   fn neg(self) -> Self::Output {
+    let mut e = Fr::zero();
+    Fr::neg(&mut e, &self.e);
+
     PrimeFieldElem {
-      e: Fr::zero().sub(&self.e)
+      e
     }
   }
 }
@@ -176,7 +176,7 @@ impl<'a> Neg for &'a PrimeFieldElem {
     Fr::neg(&mut e, &self.e);
 
     PrimeFieldElem {
-      e: Fr::zero().sub(&self.e)
+      e
     }
   }
 }
@@ -251,6 +251,7 @@ impl PrimeFieldElem {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::bls12_381::building_block::arith::Arith;
 
   #[test]
   fn sub() {

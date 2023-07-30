@@ -1,28 +1,24 @@
 #![allow(non_snake_case)]
-use crate::publickey::PublicKey;
-use crate::secp256k1::building_block::{
-    field::prime_field_elem::PrimeFieldElem,
-    secp256k1::{
-        affine_point::AffinePoint,
-        secp256k1::Secp256k1,
+use crate::{
+    publickey::PublicKey,
+    bls12_381::building_block::{
+        point::point::Point,
+        scalar::prime_field_elem::PrimeFieldElem,
     },
 };
-use std::rc::Rc;
 
 /**
  * Range Prover which contains witness
  */
 pub struct RangeProver {
-    pub curve: Rc<Secp256k1>,
-    pub(crate) v_vec: Vec<u64>,
-    pub(crate) gamma_vec: Vec<PrimeFieldElem>,
-    pub commitment_vec: Vec<AffinePoint>,
+    pub v_vec: Vec<u64>,
+    pub gamma_vec: Vec<PrimeFieldElem>,
+    pub commitment_vec: Vec<Point>,
 }
 
 impl RangeProver {
-    pub fn new(curve: Rc<Secp256k1>) -> Self {
+    pub fn new() -> Self {
         RangeProver {
-            curve,
             v_vec: Vec::new(),
             gamma_vec: Vec::new(),
             commitment_vec: Vec::new(),
@@ -39,7 +35,7 @@ impl RangeProver {
         self.gamma_vec.push(gamma.clone());
         self.commitment_vec.push(
             pk.commitment(
-                &PrimeFieldElem::new(&Rc::new(self.curve.f_n.clone()), &v),
+                &PrimeFieldElem::new(v as i32),
                 &gamma
             )
         );
