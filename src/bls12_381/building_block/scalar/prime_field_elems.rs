@@ -3,7 +3,7 @@ use std::{
   ops,
   ops::{Index, Deref},
 };
-use crate::secp256k1::building_block::field::prime_field_elem::PrimeFieldElem;
+use crate::bls12_381::building_block::scalar::prime_field_elem::PrimeFieldElem;
 
 #[derive(Clone)]
 pub struct PrimeFieldElems(pub Vec<PrimeFieldElem>);
@@ -35,7 +35,7 @@ impl<'a> PrimeFieldElems {
   pub fn sum(&self) -> PrimeFieldElem {
     assert!(self.0.len() > 0);
     let xs = &self.0;
-    xs.iter().fold(xs[0].f.elem(&0u8), |acc, x| {
+    xs.iter().fold(PrimeFieldElem::new(0), |acc, x| {
       acc + x
     })
   }
@@ -71,7 +71,7 @@ impl PartialEq for PrimeFieldElems {
       false
     } else {
       self.iter().zip(other.iter()).fold(true, |acc, (l, r)| {
-        acc && l.f == r.f && l.e == r.e
+        acc && l == r
       })
     }
   }
@@ -172,22 +172,3 @@ impl_field_elems_times_field_elem!(&PrimeFieldElem, &PrimeFieldElems);
 impl_field_elems_times_field_elem!(PrimeFieldElem, PrimeFieldElems);
 impl_field_elems_times_field_elem!(&PrimeFieldElem, PrimeFieldElems);
 impl_field_elems_times_field_elem!(PrimeFieldElem, &PrimeFieldElems);
-
-#[cfg(test)]
-mod tests {
-  use crate::secp256k1::building_block::secp256k1::secp256k1::Secp256k1;
-  use std::rc::Rc;
-
-  #[test]
-  fn test_from() {
-    let _curve = Rc::new(Secp256k1::new());
-  }
-
-  #[test]
-  fn test_to() {
-  }
-
-  #[test]
-  fn test_sum() {
-  }
-}

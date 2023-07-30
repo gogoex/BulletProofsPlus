@@ -1,5 +1,8 @@
 use mcl_rust::*;
-use crate::bls12_381::building_block::zero::Zero;
+use crate::bls12_381::building_block::{
+  zero::Zero,
+  arith::Arith,
+};
 use std::{
   fmt,
   ops::{Add, Sub, Mul, Div, Neg, Deref},
@@ -185,13 +188,6 @@ impl From<Fr> for PrimeFieldElem {
 }
 
 impl PrimeFieldElem {
-  pub fn init() {
-    let b = init(CurveType::BLS12_381);
-    if !b {
-        panic!("Initializing mcl scalar failed");
-    }
-  }
-
   pub fn new(n: i32) -> Self {
     let mut e = Fr::zero();
     e.set_int(n);
@@ -255,19 +251,10 @@ impl PrimeFieldElem {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::sync::Once;
-
-  static INIT: Once = Once::new();
-
-  pub fn initialize() {
-    INIT.call_once(|| {
-      PrimeFieldElem::init();
-    });
-  }
 
   #[test]
   fn sub() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(9);
     let b = PrimeFieldElem::new(2);
     let c = a - b;
@@ -278,7 +265,7 @@ mod tests {
 
   #[test]
   fn sub_eq_val() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(9);
     let b = PrimeFieldElem::new(9);
     let c = a - b;
@@ -289,7 +276,7 @@ mod tests {
 
   #[test]
   fn mul() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(2);
     let b = PrimeFieldElem::new(5);
     let c = a * b;
@@ -300,7 +287,7 @@ mod tests {
 
   #[test]
   fn div() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(10);
     let b = PrimeFieldElem::new(2);
     let c = a.div(&b);
@@ -311,7 +298,7 @@ mod tests {
 
   #[test]
   fn inv() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(5);
     let inv_a = a.inv();
     let c = a * inv_a;
@@ -322,7 +309,7 @@ mod tests {
 
   #[test]
   fn neg() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(5);
     let neg_a = a.clone().neg();
     let c = &a + neg_a;
@@ -331,7 +318,7 @@ mod tests {
 
   #[test]
   fn pow() {
-    initialize();
+    Arith::init();
     {
       let a = PrimeFieldElem::new(3);
       let c = a.pow(10);
@@ -350,7 +337,7 @@ mod tests {
 
   #[test]
   fn sq() {
-    initialize();
+    Arith::init();
     let a = PrimeFieldElem::new(9);
     let a_sq = a.sq();
 
