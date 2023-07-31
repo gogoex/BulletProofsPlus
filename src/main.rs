@@ -7,8 +7,8 @@ fn main() {
     println!("started");
     Arith::init();
 
-    let n = 8;
-    let m = 1;
+    let n = 64;
+    let m = 2;
 
     // setup generators
     let pk = PublicKey::new(n * m);
@@ -20,9 +20,9 @@ fn main() {
     let gamma1 = PrimeFieldElem::new(3);
     prover.commit(&pk, v1, gamma1);
 
-    // let v2 = 5u64;
-    // let gamma2 = curve.f_n.elem(&7u8);
-    // prover.commit(&pk, v2, gamma2);
+    let v2 = 5u64;
+    let gamma2 = PrimeFieldElem::new(7);
+    prover.commit(&pk, v2, gamma2);
 
     // build proof
     println!("started proving...");

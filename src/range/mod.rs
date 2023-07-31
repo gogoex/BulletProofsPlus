@@ -43,15 +43,14 @@ impl RangeProof {
                 &prover.gamma_vec[0],
                 &prover.commitment_vec[0])
         } else {
-            panic!("not implemented");
-            // Self::prove_multiple(
-            //     pk,
-            //     n,
-            //     m,
-            //     &prover.v_vec,
-            //     &prover.gamma_vec,
-            //     &prover.commitment_vec,
-            // )
+            Self::prove_multiple(
+                pk,
+                n,
+                m,
+                &prover.v_vec,
+                &prover.gamma_vec,
+                &prover.commitment_vec,
+            )
         }
     }
 
@@ -69,13 +68,12 @@ impl RangeProof {
                 &commitment_vec[0],
             )
         } else {
-            panic!("not implemented");
-            // self.verify_multiple(
-            //     pk,
-            //     n,
-            //     m,
-            //     commitment_vec,
-            // )
+            self.verify_multiple(
+                pk,
+                n,
+                m,
+                commitment_vec,
+            )
         }
     }
 
@@ -239,262 +237,261 @@ impl RangeProof {
         )
     }
 
-    // fn prove_multiple(
-    //     pk: &PublicKey,
-    //     n: usize,
-    //     m: usize,
-    //     v: &[u64],
-    //     gamma_vec: &[PrimeFieldElem],
-    //     commitment_vec: &[AffinePoint],
-    // ) -> RangeProof {
-    //     println!("in prove multiple");
+    fn prove_multiple(
+        pk: &PublicKey,
+        n: usize,
+        m: usize,
+        v: &[u64],
+        gamma_vec: &[PrimeFieldElem],
+        commitment_vec: &[Point],
+    ) -> RangeProof {
+        println!("in prove multiple");
 
-    //     let mn = n * m;
-    //     // check parameter
-    //     assert_eq!(pk.G_vec.len(), mn);
-    //     assert_eq!(pk.H_vec.len(), mn);
+        let mn = n * m;
+        // check parameter
+        assert_eq!(pk.G_vec.len(), mn);
+        assert_eq!(pk.H_vec.len(), mn);
 
-    //     // random alpha
-    //     let alpha = &PrimeFieldElem::new(33u8);
+        // random alpha
+        let alpha = &PrimeFieldElem::new(33);
 
-    //     // compute A
-    //     let mut v_bits: Vec<u8> = Vec::with_capacity(mn);
-    //     let mut A = &pk.h * alpha;
-    //     let mut i = 0;
+        // compute A
+        let mut v_bits: Vec<u8> = Vec::with_capacity(mn);
+        let mut A = &pk.h * alpha;
+        let mut i = 0;
 
-    //     for (G_i, H_i) in pk.G_vec.iter().zip(pk.H_vec.iter()) {
-    //         let index1 = i % n;
-    //         let index2 = i / n;
+        for (G_i, H_i) in pk.G_vec.iter().zip(pk.H_vec.iter()) {
+            let index1 = i % n;
+            let index2 = i / n;
 
-    //         v_bits.push(((v[index2] >> index1) & 1) as u8);
-    //         let mut point = H_i.inv();    // originally -H_i. maybe wrong
+            v_bits.push(((v[index2] >> index1) & 1) as u8);
 
-    //         if v_bits[i] != 0 {
-    //             point = G_i.clone();
-    //         }
+            let mut point = -H_i;
 
-    //         A = A + point;
-    //         i += 1;
-    //     }
-    //     let y = &PrimeFieldElem::new(12u8);
-    //     let z = &PrimeFieldElem::new(23u8);
+            if v_bits[i] != 0 {
+                point = G_i.clone();
+            }
 
-    //     // compute d
-    //     let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&PrimeFieldElem::new(2u64)).take(n).collect();
-    //     let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(&y).take(mn).collect();
-    //     let power_of_y_rev = power_of_y.iter().rev();
-    //     let z_sqr = &(z * z);
-    //     let power_of_z: Vec<PrimeFieldElem> = util::exp_iter_type2(&z_sqr).take(m).collect();
-    //     let d: Vec<PrimeFieldElem> = power_of_z
-    //         .iter()
-    //         .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
-    //         .collect();
+            A = A + point;
+            i += 1;
+        }
+        let y = &PrimeFieldElem::new(12);
+        let z = &PrimeFieldElem::new(23);
 
-    //     // compute A_hat
-    //     let G_vec_sum_exp = &-z;
+        // compute d
+        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&PrimeFieldElem::new(2)).take(n).collect();
+        let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(&y).take(mn).collect();
+        let power_of_y_rev = power_of_y.iter().rev();
+        let z_sqr = &(z * z);
+        let power_of_z: Vec<PrimeFieldElem> = util::exp_iter_type2(&z_sqr).take(m).collect();
+        let d: Vec<PrimeFieldElem> = power_of_z
+            .iter()
+            .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
+            .collect();
 
-    //     let H_exp: Vec<PrimeFieldElem> = d
-    //         .iter()
-    //         .zip(power_of_y_rev)
-    //         .map(|(d_i, power_of_y_rev_i)| d_i * power_of_y_rev_i + z)
-    //         .collect();
+        // compute A_hat
+        let G_vec_sum_exp = &-z;
 
-    //     let power_of_y_mn_plus_1 = &util::scalar_exp_vartime(&y, (mn + 1) as u64);
+        let H_exp: Vec<PrimeFieldElem> = d
+            .iter()
+            .zip(power_of_y_rev)
+            .map(|(d_i, power_of_y_rev_i)| d_i * power_of_y_rev_i + z)
+            .collect();
 
-    //     let V_exp: Vec<PrimeFieldElem> = power_of_z
-    //         .iter()
-    //         .map(|power_of_z_i| power_of_z_i * power_of_y_mn_plus_1)
-    //         .collect();
+        let power_of_y_mn_plus_1 = &util::scalar_exp_vartime(&y, (mn + 1) as u64);
 
-    //     let mut g_exp = curve.f_n.elem(&0u8);
-    //     for x in &power_of_y {
-    //         g_exp = &g_exp + x;
-    //     }
-    //     g_exp = g_exp * (z - z_sqr);
+        let V_exp: Vec<PrimeFieldElem> = power_of_z
+            .iter()
+            .map(|power_of_z_i| power_of_z_i * power_of_y_mn_plus_1)
+            .collect();
 
-    //     let mut d_sum = curve.f_n.elem(&0u8);
-    //     for x in d {
-    //         d_sum = &d_sum + x;
-    //     }
-    //     g_exp = &g_exp - (&d_sum * power_of_y_mn_plus_1 * z);
+        let mut g_exp = PrimeFieldElem::new(0);
+        for x in &power_of_y {
+            g_exp = &g_exp + x;
+        }
+        g_exp = g_exp * (z - z_sqr);
 
-    //     // let G_vec_sum: AffinePoint = pk.G_vec.iter().sum();
-    //     let mut G_vec_sum = curve.g().zero();
-    //     for x in &pk.G_vec {
-    //         G_vec_sum = &G_vec_sum + x;
-    //     }
+        let mut d_sum = PrimeFieldElem::new(0);
+        for x in d {
+            d_sum = &d_sum + x;
+        }
+        g_exp = &g_exp - (&d_sum * power_of_y_mn_plus_1 * z);
 
-    //     let mut mv = MulVec::new();
-    //     mv.add_scalar(&PrimeFieldElem::new(1u8));
-    //     mv.add_scalar(&G_vec_sum_exp);
-    //     mv.add_scalars(&H_exp);
-    //     mv.add_scalar(&g_exp);
-    //     mv.add_scalars(&V_exp);
+        // let G_vec_sum: AffinePoint = pk.G_vec.iter().sum();
+        let mut G_vec_sum = Point::zero();
+        for x in &pk.G_vec {
+            G_vec_sum = &G_vec_sum + x;
+        }
 
-    //     mv.add_point(&A);
-    //     mv.add_point(&G_vec_sum);
-    //     mv.add_points(&pk.H_vec);
-    //     mv.add_point(&pk.g);
-    //     mv.add_points(&commitment_vec.to_vec());
+        let mut mv = MulVec::new();
+        mv.add_scalar(&PrimeFieldElem::new(1));
+        mv.add_scalar(&G_vec_sum_exp);
+        mv.add_scalars(&H_exp);
+        mv.add_scalar(&g_exp);
+        mv.add_scalars(&V_exp);
 
-    //     let A_hat = mv.calculate(&curve);
+        mv.add_point(&A);
+        mv.add_point(&G_vec_sum);
+        mv.add_points(&pk.H_vec);
+        mv.add_point(&pk.g);
+        mv.add_points(&commitment_vec.to_vec());
 
-    //     // compute a_vec, b_vec, alpha_hat
-    //     let one = &PrimeFieldElem::new(1u8);
-    //     let nz = &-z;
-    //     let one_minus_z = &(one - z);
+        let A_hat = mv.calculate();
 
-    //     let a_vec: Vec<PrimeFieldElem> = v_bits
-    //         .iter()
-    //         //.map(|v_bits_i| Scalar::conditional_select(&nz, &one_minus_z, *v_bits_i))
-    //         .map(|v_bits_i| if *v_bits_i != 0 { one_minus_z.clone() } else { nz.clone() })
-    //         .collect();
+        // compute a_vec, b_vec, alpha_hat
+        let one = &PrimeFieldElem::new(1);
+        let nz = &-z;
+        let one_minus_z = &(one - z);
 
-    //     let b_vec: Vec<PrimeFieldElem> = H_exp
-    //         .iter()
-    //         .zip(v_bits.iter())
-    //         .map(|(H_exp_i, v_bits_i)| {
-    //             //Scalar::conditional_select(&(H_exp_i - one), H_exp_i, *v_bits_i)
-    //             if *v_bits_i != 0 { H_exp_i.clone() } else { (H_exp_i - one).clone() }
-    //         })
-    //         .collect();
+        let a_vec: Vec<PrimeFieldElem> = v_bits
+            .iter()
+            //.map(|v_bits_i| Scalar::conditional_select(&nz, &one_minus_z, *v_bits_i))
+            .map(|v_bits_i| if *v_bits_i != 0 { one_minus_z.clone() } else { nz.clone() })
+            .collect();
 
-    //     let power_of_z_gamma_vec: Vec<PrimeFieldElem> = power_of_z
-    //         .iter()
-    //         .zip(gamma_vec.iter())
-    //         .map(|(power_of_z_i, gamma_i)| power_of_z_i * gamma_i )
-    //         .collect();
-    //     let mut power_of_z_gamma_sum = curve.f_n.elem(&0u8);
-    //     for x in power_of_z_gamma_vec {
-    //         power_of_z_gamma_sum = power_of_z_gamma_sum + x;
-    //     }
+        let b_vec: Vec<PrimeFieldElem> = H_exp
+            .iter()
+            .zip(v_bits.iter())
+            .map(|(H_exp_i, v_bits_i)| {
+                //Scalar::conditional_select(&(H_exp_i - one), H_exp_i, *v_bits_i)
+                if *v_bits_i != 0 { H_exp_i.clone() } else { (H_exp_i - one).clone() }
+            })
+            .collect();
 
-    //     let alpha_hat = alpha + power_of_z_gamma_sum * power_of_y_mn_plus_1;
+        let power_of_z_gamma_vec: Vec<PrimeFieldElem> = power_of_z
+            .iter()
+            .zip(gamma_vec.iter())
+            .map(|(power_of_z_i, gamma_i)| power_of_z_i * gamma_i )
+            .collect();
+        let mut power_of_z_gamma_sum = PrimeFieldElem::new(0);
+        for x in power_of_z_gamma_vec {
+            power_of_z_gamma_sum = power_of_z_gamma_sum + x;
+        }
 
-    //     // generate weighted inner product proof
-    //     let proof = WeightedInnerProductProof::prove(
-    //         curve,
-    //         &pk,
-    //         &a_vec,
-    //         &b_vec,
-    //         &power_of_y,
-    //         alpha_hat,
-    //         A_hat,
-    //     );
+        let alpha_hat = alpha + power_of_z_gamma_sum * power_of_y_mn_plus_1;
 
-    //     RangeProof {
-    //         A,
-    //         proof,
-    //     }
-    // }
+        // generate weighted inner product proof
+        let proof = WeightedInnerProductProof::prove(
+            &pk,
+            &a_vec,
+            &b_vec,
+            &power_of_y,
+            alpha_hat,
+            A_hat,
+        );
 
-    // fn verify_multiple(
-    //     &self,
-    //     curve: Rc<Secp256k1>,
-    //     pk: &PublicKey,
-    //     n: usize,
-    //     m: usize,
-    //     commitment_vec: &[AffinePoint],
-    // ) -> Result<(), ProofError> {
-    //     println!("in verify multiple");
+        RangeProof {
+            A,
+            proof,
+        }
+    }
 
-    //     let mn = n * m;
+    fn verify_multiple(
+        &self,
+        pk: &PublicKey,
+        n: usize,
+        m: usize,
+        commitment_vec: &[Point],
+    ) -> Result<(), ProofError> {
+        println!("in verify multiple");
 
-    //     // 1. Recompute y and z
-    //     let y = &PrimeFieldElem::new(12u8);
-    //     let z = &PrimeFieldElem::new(23u8);
-    //     let minus_z = &-z;
-    //     let z_sqr = &(z * z);
+        let mn = n * m;
 
-    //     // 2. Compute power of two, power of y, power of z
-    //     let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&PrimeFieldElem::new(2u64)).take(n).collect();
-    //     let mut power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(&y).take(mn + 1).collect();
-    //     let power_of_y_mn_plus_1 = match power_of_y.pop() {
-    //         Some(point) => point,
-    //         None => panic!("fail to pop"),
-    //     };
-    //     let mut power_of_y_rev: Vec<PrimeFieldElem> = power_of_y.clone();
-    //     power_of_y_rev.reverse();
+        // 1. Recompute y and z
+        let y = &PrimeFieldElem::new(12);
+        let z = &PrimeFieldElem::new(23);
+        let minus_z = &-z;
+        let z_sqr = &(z * z);
 
-    //     let power_of_z: Vec<PrimeFieldElem> = util::exp_iter_type2(&z_sqr).take(m).collect();
+        // 2. Compute power of two, power of y, power of z
+        let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&PrimeFieldElem::new(2)).take(n).collect();
+        let mut power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(&y).take(mn + 1).collect();
+        let power_of_y_mn_plus_1 = match power_of_y.pop() {
+            Some(point) => point,
+            None => panic!("fail to pop"),
+        };
+        let mut power_of_y_rev: Vec<PrimeFieldElem> = power_of_y.clone();
+        power_of_y_rev.reverse();
 
-    //     // 3. Compute concat_z_and_2
-    //     let concat_z_and_2: Vec<PrimeFieldElem> = power_of_z
-    //         .iter()
-    //         .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
-    //         .collect();
+        let power_of_z: Vec<PrimeFieldElem> = util::exp_iter_type2(&z_sqr).take(m).collect();
 
-    //     // 4. Compute scalars for verification
-    //     let (challenges_sqr, challenges_inv_sqr, s_vec, e)
-    //         = self.proof.verification_scalars(&curve, mn)?;
+        // 3. Compute concat_z_and_2
+        let concat_z_and_2: Vec<PrimeFieldElem> = power_of_z
+            .iter()
+            .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
+            .collect();
 
-    //     let s_prime_vec = s_vec.iter().rev();
-    //     let e_inv = &e.inv();
-    //     let e_sqr = &(&e * &e);
-    //     let e_sqr_inv = &e_sqr.inv();
-    //     let r_prime_e_inv_y = &(&self.proof.r_prime * e_inv * y);
-    //     let s_prime_e_inv = &(&self.proof.s_prime * e_inv);
+        // 4. Compute scalars for verification
+        let (challenges_sqr, challenges_inv_sqr, s_vec, e)
+            = self.proof.verification_scalars(mn)?;
 
-    //     // 5. Compute exponents of G_vec, H_vec, g, and h
-    //     let r_prime = &self.proof.r_prime;
-    //     let s_prime = &self.proof.s_prime;
-    //     let d_prime = &self.proof.d_prime;
+        let s_prime_vec = s_vec.iter().rev();
+        let e_inv = &e.inv();
+        let e_sqr = &(&e * &e);
+        let e_sqr_inv = &e_sqr.inv();
+        let r_prime_e_inv_y = &(&self.proof.r_prime * e_inv * y);
+        let s_prime_e_inv = &(&self.proof.s_prime * e_inv);
 
-    //     let G_exp: Vec<PrimeFieldElem> = s_vec.iter()
-    //         .zip(util::exp_iter_type2(&y.inv()))
-    //         .map(|(s_vec_i, power_of_y_inv_i)| minus_z - s_vec_i * power_of_y_inv_i * r_prime_e_inv_y)
-    //         .collect();
+        // 5. Compute exponents of G_vec, H_vec, g, and h
+        let r_prime = &self.proof.r_prime;
+        let s_prime = &self.proof.s_prime;
+        let d_prime = &self.proof.d_prime;
 
-    //     let H_exp: Vec<PrimeFieldElem> = s_prime_vec
-    //         .zip(concat_z_and_2.iter())
-    //         .zip(power_of_y_rev)
-    //         .map(|((s_prime_vec_i, d_i), power_of_y_rev_i)| - s_prime_e_inv * s_prime_vec_i + (d_i * power_of_y_rev_i + z))
-    //         .collect();
+        let G_exp: Vec<PrimeFieldElem> = s_vec.iter()
+            .zip(util::exp_iter_type2(&y.inv()))
+            .map(|(s_vec_i, power_of_y_inv_i)| minus_z - s_vec_i * power_of_y_inv_i * r_prime_e_inv_y)
+            .collect();
 
-    //     let sum_y = util::sum_of_powers_type2(&y, mn);
-    //     let sum_2 = util::sum_of_powers_type1(&PrimeFieldElem::new(2u64), n);
-    //     let sum_z = util::sum_of_powers_type2(&z_sqr, m);
+        let H_exp: Vec<PrimeFieldElem> = s_prime_vec
+            .zip(concat_z_and_2.iter())
+            .zip(power_of_y_rev)
+            .map(|((s_prime_vec_i, d_i), power_of_y_rev_i)| - s_prime_e_inv * s_prime_vec_i + (d_i * power_of_y_rev_i + z))
+            .collect();
 
-    //     let g_exp = -r_prime * s_prime * y * e_sqr_inv + (sum_y * (z - z_sqr) - &power_of_y_mn_plus_1 * z * sum_2 * sum_z);
-    //     let h_exp = -d_prime * e_sqr_inv;
+        let sum_y = util::sum_of_powers_type2(&y, mn);
+        let sum_2 = util::sum_of_powers_type1(&PrimeFieldElem::new(2), n);
+        let sum_z = util::sum_of_powers_type2(&z_sqr, m);
 
-    //     // 6. Compute exponents of V_vec
-    //     let V_exp: Vec<PrimeFieldElem> = power_of_z.iter()
-    //         .map(|power_of_z_i| power_of_z_i * &power_of_y_mn_plus_1)
-    //         .collect();
+        let g_exp = -r_prime * s_prime * y * e_sqr_inv + (sum_y * (z - z_sqr) - &power_of_y_mn_plus_1 * z * sum_2 * sum_z);
+        let h_exp = -d_prime * e_sqr_inv;
 
-    //     // 7. Compute RHS / LHS
-    //     let mut mv = MulVec::new();
-    //     mv.add_scalar(&PrimeFieldElem::new(1u8));
-    //     mv.add_scalar(&e_inv);
-    //     mv.add_scalar(&e_sqr_inv);
-    //     mv.add_scalar(&g_exp);
-    //     mv.add_scalar(&h_exp);
-    //     mv.add_scalars(&challenges_sqr);
-    //     mv.add_scalars(&challenges_inv_sqr);
-    //     mv.add_scalars(&G_exp);
-    //     mv.add_scalars(&H_exp);
-    //     mv.add_scalars(&V_exp);
+        // 6. Compute exponents of V_vec
+        let V_exp: Vec<PrimeFieldElem> = power_of_z.iter()
+            .map(|power_of_z_i| power_of_z_i * &power_of_y_mn_plus_1)
+            .collect();
 
-    //     mv.add_point(&self.A);
-    //     mv.add_point(&self.proof.A);
-    //     mv.add_point(&self.proof.B);
-    //     mv.add_point(&pk.g);
-    //     mv.add_point(&pk.h);
-    //     mv.add_points(&self.proof.L_vec);
-    //     mv.add_points(&self.proof.R_vec);
-    //     mv.add_points(&pk.G_vec);
-    //     mv.add_points(&pk.H_vec);
-    //     mv.add_points(&commitment_vec.to_vec());
+        // 7. Compute RHS / LHS
+        let mut mv = MulVec::new();
+        mv.add_scalar(&PrimeFieldElem::new(1));
+        mv.add_scalar(&e_inv);
+        mv.add_scalar(&e_sqr_inv);
+        mv.add_scalar(&g_exp);
+        mv.add_scalar(&h_exp);
+        mv.add_scalars(&challenges_sqr);
+        mv.add_scalars(&challenges_inv_sqr);
+        mv.add_scalars(&G_exp);
+        mv.add_scalars(&H_exp);
+        mv.add_scalars(&V_exp);
 
-    //     let expected = mv.calculate(&curve);
+        mv.add_point(&self.A);
+        mv.add_point(&self.proof.A);
+        mv.add_point(&self.proof.B);
+        mv.add_point(&pk.g);
+        mv.add_point(&pk.h);
+        mv.add_points(&self.proof.L_vec);
+        mv.add_points(&self.proof.R_vec);
+        mv.add_points(&pk.G_vec);
+        mv.add_points(&pk.H_vec);
+        mv.add_points(&commitment_vec.to_vec());
 
-    //     if expected.is_zero() {
-    //         Ok(())
-    //     } else {
-    //         Err(ProofError::VerificationError)
-    //     }
-    // }
+        let expected = mv.calculate();
+
+        if expected.is_zero() {
+            Ok(())
+        } else {
+            Err(ProofError::VerificationError)
+        }
+    }
 
     // pub fn size(&self) -> usize {
     //     let mut res: usize = 0;

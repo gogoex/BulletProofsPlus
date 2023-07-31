@@ -51,59 +51,59 @@ pub fn scalar_exp_vartime(x: &PrimeFieldElem, mut n: u64) -> PrimeFieldElem {
     result
 }
 
-// pub fn sum_of_powers_type1(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
-//     if !n.is_power_of_two() {
-//         return sum_of_powers_slow_type1(x, n);
-//     }
-//     if n == 0 || n == 1 {
-//         return PrimeFieldElem::new(n as i32);
-//     }
-//     let mut m = n;
-//     let mut result = PrimeFieldElem::new(1) + x;
-//     let mut factor = x.clone();
+pub fn sum_of_powers_type1(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
+    if !n.is_power_of_two() {
+        return sum_of_powers_slow_type1(x, n);
+    }
+    if n == 0 || n == 1 {
+        return PrimeFieldElem::new(n as i32);
+    }
+    let mut m = n;
+    let mut result = PrimeFieldElem::new(1) + x;
+    let mut factor = x.clone();
 
-//     while m > 2 {
-//         factor = &factor * &factor;
-//         result = &result + &factor * &result;
-//         m = m / 2;
-//     }
-//     result
-// }
+    while m > 2 {
+        factor = &factor * &factor;
+        result = &result + &factor * &result;
+        m = m / 2;
+    }
+    result
+}
 
-// fn sum_of_powers_slow_type1(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
-//     let mut sum = PrimeFieldElem::zero();
-//     for x in exp_iter_type1(x).take(n) {
-//         sum = sum + x;
-//     }
-//     sum
-// }
+fn sum_of_powers_slow_type1(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
+    let mut sum = PrimeFieldElem::zero();
+    for x in exp_iter_type1(x).take(n) {
+        sum = sum + x;
+    }
+    sum
+}
 
-// pub fn sum_of_powers_type2(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
-//     if !n.is_power_of_two() {
-//         return sum_of_powers_slow_type2(x, n);
-//     }
-//     if n == 0 || n == 1 {
-//         return PrimeFieldElem::new(n as i32);
-//     }
-//     let mut m = n;
-//     let mut result = x + x * x;
-//     let mut factor = x.clone();
+pub fn sum_of_powers_type2(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
+    if !n.is_power_of_two() {
+        return sum_of_powers_slow_type2(x, n);
+    }
+    if n == 0 || n == 1 {
+        return PrimeFieldElem::new(n as i32);
+    }
+    let mut m = n;
+    let mut result = x + x * x;
+    let mut factor = x.clone();
 
-//     while m > 2 {
-//         factor = &factor * &factor;
-//         result = &result + &factor * &result;
-//         m = m / 2;
-//     }
-//     result
-// }
+    while m > 2 {
+        factor = &factor * &factor;
+        result = &result + &factor * &result;
+        m = m / 2;
+    }
+    result
+}
 
-// fn sum_of_powers_slow_type2(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
-//     let mut sum = PrimeFieldElem::zero();
-//     for x in exp_iter_type2(x).take(n) {
-//         sum = sum + x;
-//     }
-//     sum
-// }
+fn sum_of_powers_slow_type2(x: &PrimeFieldElem, n: usize) -> PrimeFieldElem {
+    let mut sum = PrimeFieldElem::zero();
+    for x in exp_iter_type2(x).take(n) {
+        sum = sum + x;
+    }
+    sum
+}
 
 // #[allow(dead_code)]
 // pub fn inner_product(a: &[Scalar], b: &[Scalar]) -> Scalar {
