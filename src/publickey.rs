@@ -21,6 +21,8 @@ impl PublicKey {
     pub fn new(length: usize) -> Self {
         // g = 1g
         let g = &Point::base_point();
+
+        // h = 2g
         let h = g * PrimeFieldElem::new(2);
 
         // G = 3g, 6g, 9g, ...
@@ -33,7 +35,7 @@ impl PublicKey {
         // H = 5g, 10g, 15g, ...
         let mut H_vec: Vec<Point> = vec![];
         for i in 0..length {
-            let p = g * PrimeFieldElem::new((i as i32 + 1) * 3);
+            let p = g * PrimeFieldElem::new((i as i32 + 1) * 5);
             H_vec.push(p);
         }
         println!("G_vec.len={}", G_vec.len());

@@ -26,7 +26,8 @@ impl Point {
 
 impl fmt::Debug for Point {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{{ x: {:?}, y: {:?}, z: {:?} }}", &self.0.x, &self.0.y, self.0.z)
+    write!(f, "{}", self.0.get_str(16))
+    // write!(f, "{{ x: {:?}, y: {:?}, z: {:?} }}", &self.0.x, &self.0.y, self.0.z)
   }
 }
 

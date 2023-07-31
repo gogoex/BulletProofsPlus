@@ -33,11 +33,11 @@ impl RangeProver {
     ) {
         self.v_vec.push(v);
         self.gamma_vec.push(gamma.clone());
-        self.commitment_vec.push(
-            pk.commitment(
-                &PrimeFieldElem::new(v as i32),
-                &gamma
-            )
+        let commitment = pk.commitment(
+            &PrimeFieldElem::new(v as i32),
+            &gamma
         );
+        println!("V[{}]={:?}", &self.v_vec.len() - 1, commitment);
+        self.commitment_vec.push(commitment);
     }
 }
