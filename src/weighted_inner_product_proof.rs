@@ -48,6 +48,8 @@ impl WeightedInnerProductProof {
         let mut b = &mut b_vec.clone()[..];
         let mut power_of_y = &mut power_of_y_vec.clone()[..];
 
+// println!("y_pows={:?}", &power_of_y);
+
         // create copyed mutable scalars
         let mut alpha = gamma;
 
@@ -179,20 +181,28 @@ impl WeightedInnerProductProof {
         let rcbsca = &r * &power_of_y[0] * &b[0] + &s * &power_of_y[0] * &a[0];
         let rcs = &r * &power_of_y[0] * &s;
 
+        // println!("A's g={:?}", &(&pk.g * &rcbsca));
+        // println!("gsr={:?}", &(&G[0] * &r));
+        // println!("hss={:?}", &(&H[0] * &s));
+        // println!("hdelta={:?}", &(&pk.h * &delta));
+
         let mut mv_A = MulVec::new();
         mv_A.add_scalar(&r);
         mv_A.add_scalar(&s);
         mv_A.add_scalar(&rcbsca);
         mv_A.add_scalar(&delta);
+
         mv_A.add_point(&G[0]);
         mv_A.add_point(&H[0]);
         mv_A.add_point(&pk.g);
         mv_A.add_point(&pk.h);
         let A = mv_A.calculate();
+        // println!("res.A={:?}", &A);
 
         let mut mv_B = MulVec::new();
         mv_B.add_scalar(&rcs);
         mv_B.add_scalar(&eta);
+
         mv_B.add_point(&pk.g);
         mv_B.add_point(&pk.h);
         let B = mv_B.calculate();

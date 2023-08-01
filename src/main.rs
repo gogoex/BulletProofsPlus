@@ -33,6 +33,15 @@ fn main() {
     );
     println!("finished proving.");
 
+// println!("Ls={:?}", &proof.proof.L_vec);
+// println!("Rs={:?}", &proof.proof.R_vec);
+// println!("A={:?}", &proof.A);
+// println!("A_wip={:?}", &proof.proof.A);
+// println!("B={:?}", &proof.proof.B);
+// println!("r'={:?}", &proof.proof.r_prime);
+// println!("s'={:?}", &proof.proof.s_prime);
+// println!("delta'={:?}", &proof.proof.d_prime);
+
     let commitment_vec = prover.commitment_vec;
 
     // verify proof

@@ -37,7 +37,7 @@ impl RangeProver {
             &PrimeFieldElem::new(v as i32),
             &gamma
         );
-        println!("V[{}]={:?}", &self.v_vec.len() - 1, commitment);
+        // println!("V[{}]={:?}", &self.v_vec.len() - 1, commitment);
         self.commitment_vec.push(commitment);
     }
 }

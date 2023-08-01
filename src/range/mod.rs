@@ -111,7 +111,7 @@ impl RangeProof {
 
         // compute A_hat
         let one = &PrimeFieldElem::new(1);
-        let two = &PrimeFieldElem::new(24);
+        let two = &PrimeFieldElem::new(2);
         let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&PrimeFieldElem::new(2)).take(n).collect();
         let power_of_y: Vec<PrimeFieldElem> = util::exp_iter_type2(y).take(n).collect();
         let power_of_y_rev = power_of_y.clone().into_iter().rev();
@@ -277,6 +277,7 @@ impl RangeProof {
         }
         let y = &PrimeFieldElem::new(12);
         let z = &PrimeFieldElem::new(23);
+// println!("aL={:?}", &v_bits);
 
         // compute d
         let power_of_two: Vec<PrimeFieldElem> = util::exp_iter_type1(&PrimeFieldElem::new(2)).take(n).collect();
@@ -288,6 +289,8 @@ impl RangeProof {
             .iter()
             .flat_map(|exp_z| power_of_two.iter().map(move |exp_2| exp_2 * exp_z))
             .collect();
+// println!("power_of_z={:?}", &power_of_z);
+// println!("d={:?}", &d);
 
         // compute A_hat
         let G_vec_sum_exp = &-z;
@@ -322,6 +325,7 @@ impl RangeProof {
         for x in &pk.G_vec {
             G_vec_sum = &G_vec_sum + x;
         }
+//println!("A={:?}", &(&A * PrimeFieldElem::new(1)));
 
         let mut mv = MulVec::new();
         mv.add_scalar(&PrimeFieldElem::new(1));
@@ -337,6 +341,7 @@ impl RangeProof {
         mv.add_points(&commitment_vec.to_vec());
 
         let A_hat = mv.calculate();
+// println!("A_hat={:?}", &A_hat);
 
         // compute a_vec, b_vec, alpha_hat
         let one = &PrimeFieldElem::new(1);
@@ -369,6 +374,9 @@ impl RangeProof {
         }
 
         let alpha_hat = alpha + power_of_z_gamma_sum * power_of_y_mn_plus_1;
+// println!("alpha_hat={:?}", &alpha_hat);
+
+// println!("a_hat_R={:?}", &b_vec);
 
         // generate weighted inner product proof
         let proof = WeightedInnerProductProof::prove(
@@ -379,6 +387,14 @@ impl RangeProof {
             alpha_hat,
             A_hat,
         );
+
+// println!("Ls={:?}", &proof.L_vec);
+// println!("Rs={:?}", &proof.R_vec);
+//println!("A_wip={:?}", &proof.A);
+// println!("B={:?}", &proof.B);
+// println!("r_prime={:?}", &proof.r_prime);
+// println!("s_prime={:?}", &proof.s_prime);
+// println!("d_prime={:?}", &proof.d_prime);
 
         RangeProof {
             A,
