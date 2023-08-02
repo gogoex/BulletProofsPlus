@@ -194,6 +194,12 @@ impl PrimeFieldElem {
     PrimeFieldElem { e }
   }
 
+  pub fn of_str(s: &str) -> Self {
+    let mut e = Fr::zero();
+    e.set_str(s, 16);
+    PrimeFieldElem { e }
+  }
+
   pub fn one() -> Self {
     PrimeFieldElem::new(1)
   }

@@ -48,7 +48,16 @@ impl WeightedInnerProductProof {
         let mut b = &mut b_vec.clone()[..];
         let mut power_of_y = &mut power_of_y_vec.clone()[..];
 
-// println!("y_pows={:?}", &power_of_y);
+        let hd_es = vec![
+            PrimeFieldElem::of_str("21d1c5fa2498181be27f4b212d83bd6de03e07dfb252118f069028a4120fa6f5"),
+            PrimeFieldElem::of_str("103294087b8399aafff9396cac7f693d7f5778095464315c41374fa1c6de33f4"),
+            PrimeFieldElem::of_str("5152bf22381297a83deb1d998bf018c73c68912fb87326ba80c84b57dad2d935"),
+            PrimeFieldElem::of_str("b709714556367de1face6ae2f79325dde6964791de35af00a825ac5ea5070a6"),
+            PrimeFieldElem::of_str("6686ecbdf9645757693a1df1a7df9bcbb1ff93135d2178ee8bc224936be274f3"),
+            PrimeFieldElem::of_str("3494661e4458124c1790d226f0f56a79c783f429e95199b829b1392dbf90dbe9"),
+            PrimeFieldElem::of_str("3c078e15b435b4036d828ec86af0b82f63e382eb6fb79e0e9764b45ff3becae0"),
+        ];
+        let mut i = 0;
 
         // create copyed mutable scalars
         let mut alpha = gamma;
@@ -128,7 +137,11 @@ impl WeightedInnerProductProof {
             R_vec.push(R.clone());
 
             // get challenge e
-            let e = PrimeFieldElem::new(7);
+            // let e = PrimeFieldElem::new(7);
+            let e = hd_es[i].clone();
+            println!("prove {}={:?}", i, &e);
+            i += 1;
+
             let e_inv = e.inv();
             let e_sqr = &e * &e;
             let e_sqr_inv = &e_inv * &e_inv;
@@ -347,10 +360,23 @@ impl WeightedInnerProductProof {
         // }
         //transcript.weighted_inner_product_domain_sep(power_of_y_vec);
 
+        let hd_es = vec![
+            PrimeFieldElem::of_str("21d1c5fa2498181be27f4b212d83bd6de03e07dfb252118f069028a4120fa6f5"),
+            PrimeFieldElem::of_str("103294087b8399aafff9396cac7f693d7f5778095464315c41374fa1c6de33f4"),
+            PrimeFieldElem::of_str("5152bf22381297a83deb1d998bf018c73c68912fb87326ba80c84b57dad2d935"),
+            PrimeFieldElem::of_str("b709714556367de1face6ae2f79325dde6964791de35af00a825ac5ea5070a6"),
+            PrimeFieldElem::of_str("6686ecbdf9645757693a1df1a7df9bcbb1ff93135d2178ee8bc224936be274f3"),
+            PrimeFieldElem::of_str("3494661e4458124c1790d226f0f56a79c783f429e95199b829b1392dbf90dbe9"),
+            PrimeFieldElem::of_str("3c078e15b435b4036d828ec86af0b82f63e382eb6fb79e0e9764b45ff3becae0"),
+        ];
+
         // 1. Recompute e_1, e_2, ..., e_k based on the proof transcript
         let mut challenges = Vec::with_capacity(logn);
-        for _i in 0..self.L_vec.len() {
-            challenges.push(PrimeFieldElem::new(7));
+        for i in 0..self.L_vec.len() {
+            let e = hd_es[i].clone();
+            println!("verify {}={:?}", i, &e);
+            challenges.push(e);
+            //challenges.push(PrimeFieldElem::new(7));
         }
 
         // 2. Compute 1/(e_1...e_k) and 1/e_k, ..., 1/e_1
